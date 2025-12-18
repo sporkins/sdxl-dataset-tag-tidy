@@ -184,6 +184,10 @@ input[type="checkbox"] {
   border-left: 3px solid var(--accent);
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .small {
   font-size: 0.85rem;
   color: var(--muted);
