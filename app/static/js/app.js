@@ -49,10 +49,12 @@ document.body.addEventListener('click', (event) => {
       const isHidden = target.hasAttribute('hidden');
       if (isHidden) {
         target.removeAttribute('hidden');
+        target.classList.remove('is-hidden');
         toggleButton.textContent = hideLabel;
         toggleButton.setAttribute('aria-expanded', 'true');
       } else {
         target.setAttribute('hidden', '');
+        target.classList.add('is-hidden');
         toggleButton.textContent = showLabel;
         toggleButton.setAttribute('aria-expanded', 'false');
       }
