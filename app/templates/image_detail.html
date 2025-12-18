@@ -4,6 +4,16 @@
 <section class="stack">
     <a class="secondary button" href="/dataset">Back to dataset</a>
     <div class="card stack">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+            <div class="row" style="gap:0.5rem;">
+                {% if neighbors.previous %}
+                <a class="secondary button" href="/image/{{ neighbors.previous }}">← Previous</a>
+                {% endif %}
+                {% if neighbors.next %}
+                <a class="secondary button" href="/image/{{ neighbors.next }}">Next →</a>
+                {% endif %}
+            </div>
+        </div>
         <div class="row wrap" style="gap:1rem;">
             <div style="flex:2; min-width:220px;">
                 <img src="/img/full/{{ image.image_id }}" alt="{{ image.rel_path }}" style="width:100%; border-radius:12px;">

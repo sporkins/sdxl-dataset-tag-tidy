@@ -93,6 +93,7 @@ def image_detail(request: Request, image_id: str, manager: DatasetManager = Depe
             "image": image,
             "hints": hints_map,
             "undesired_tags": undesired_lookup,
+            "neighbors": manager.get_neighbor_ids(image_id),
         },
     )
 
