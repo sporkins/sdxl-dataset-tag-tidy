@@ -188,6 +188,15 @@ class DatasetManager:
             raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Image not found.")
         return {"image_id": image_id, "tags": image.tags_current, "is_dirty": image.is_dirty()}
 
+    def get_neighbor_ids(self, image_id: str) -> Dict[str, Optional[str]]:
+        if image_id not in self.images:
+            raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Image not found.")
+        image_ids = list(self.images.keys())
+        index = image_ids.index(image_id)
+        previous_id = image_ids[index - 1] if index > 0 else None
+        next_id = image_ids[index + 1] if index < len(image_ids) - 1 else None
+        return {"previous": previous_id, "next": next_id}
+
     def stage_image_edit(self, image_id: str, op: Dict[str, object]) -> Dict[str, object]:
         image = self.images.get(image_id)
         if not image:
