@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any, Dict, Tuple
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 
 from app.deps import get_config_service, get_dataset_manager
 from app.services.config_service import ConfigService
 from app.services.dataset_manager import DatasetManager
 
 router = APIRouter()
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
 
 
 async def _coerce_payload(request: Request) -> Dict[str, Any]:
@@ -59,6 +62,31 @@ def dataset_summary(manager: DatasetManager = Depends(get_dataset_manager)):
 @router.get("/image/{image_id}/tags")
 def image_tags(image_id: str, manager: DatasetManager = Depends(get_dataset_manager)):
     return manager.get_image_tags(image_id)
+
+
+@router.get("/image/{image_id}/hint-options")
+def hint_options(
+    request: Request,
+    image_id: str,
+    category: str,
+    hint_type: str = "missing",
+    manager: DatasetManager = Depends(get_dataset_manager),
+):
+    manager.get_image(image_id)
+    from app.services.tag_service import TagService
+
+    options = TagService.hint_options(category)
+    return templates.TemplateResponse(
+        "fragments/hint_options.html",
+        {
+            "request": request,
+            "image_id": image_id,
+            "category": category,
+            "hint_type": hint_type,
+            "options": options.get("options", []),
+            "allows_freeform": options.get("allows_freeform", False),
+        },
+    )
 
 
 @router.post("/ops/bulk")
