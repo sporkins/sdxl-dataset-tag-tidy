@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tag Tidy{% endblock %}</title>
+    <link rel="stylesheet" href="https://unpkg.com/normalize.css/normalize.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="/static/js/app.js" defer></script>
+</head>
+<body hx-boost="true">
+<header class="stack" style="margin-bottom: 1rem;">
+    <h1 style="margin: 0;">SDXL Dataset Tag Tidy</h1>
+    <nav class="breadcrumb">
+        <a href="/">Datasets</a>
+        <span>/</span>
+        <a href="/dataset">Current</a>
+        <span>/</span>
+        <a href="/settings/undesired">Undesired Tags</a>
+    </nav>
+</header>
+<main>
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

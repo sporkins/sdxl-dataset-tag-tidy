@@ -1,1 +1,12 @@
 /.idea/
+/__pycache__/
+/.venv/
+/env/
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.DS_Store
+/.mypy_cache/
+/.pytest_cache/
+/.tag_tidy_cache/

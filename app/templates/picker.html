@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Pick Dataset{% endblock %}
+{% block content %}
+<section class="stack">
+    <div class="card stack">
+        <p>Select a dataset folder under <code>C:/Zen/dev/kohya_ss/training</code>. Tap through the folder browser to pick a directory, then load it into memory.</p>
+        <div class="small">Max 200 images per dataset. Paths are validated server-side.</div>
+        {% if error_message %}
+        <div class="badge warn">{{ error_message }}</div>
+        {% endif %}
+    </div>
+    <input type="hidden" id="selected-rel" name="rel" value="{{ dataset_rel or browse.current.rel }}">
+    <div id="folder-browser">
+        {% include "fragments/picker_browser.html" %}
+    </div>
+    <div class="card stack">
+        <div class="small">Selected folder</div>
+        <div id="selected-path-label">{{ dataset_rel or browse.current.rel or 'training (root)' }}</div>
+        <form class="stack" hx-post="/api/dataset/load" hx-target="#load-result" hx-include="#selected-rel" hx-on::after-request="if(event.detail.successful){ window.location='/dataset'; }">
+            <button type="submit">Load dataset</button>
+        </form>
+        <div id="load-result" class="small"></div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,7 @@
+{
+  "thumbnail_cache": {
+    "enabled": false,
+    "mode": "disk",
+    "dir_name": ".tag_tidy_cache"
+  }
+}

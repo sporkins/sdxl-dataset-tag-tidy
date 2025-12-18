@@ -1,0 +1,133 @@
+<div class="stack">
+    <div class="card row wrap" style="justify-content: space-between; align-items: center;">
+        <div>
+            <div class="small">Dataset</div>
+            <div>{{ summary.dataset_rel or 'training (root)' }}</div>
+        </div>
+        <div class="row" style="gap:0.5rem;">
+            <span class="badge">{{ summary.image_count }} images loaded</span>
+        </div>
+    </div>
+
+    <div class="card pending" id="pending-changes">
+        <div class="row" style="justify-content: space-between;">
+            <div>
+                <div class="small">Pending changes</div>
+                <div><strong>{{ changes.dirty_images }}</strong> image(s) dirty</div>
+            </div>
+            <div class="row" style="gap: 0.5rem;">
+                <form hx-post="/api/changes/apply" hx-swap="none" hx-on::after-request="refreshDatasetSection()">
+                    <button type="submit" class="secondary">Apply</button>
+                </form>
+                <form hx-post="/api/changes/discard" hx-swap="none" hx-on::after-request="refreshDatasetSection()">
+                    <button type="submit" class="secondary">Discard</button>
+                </form>
+            </div>
+        </div>
+        {% if changes.changes %}
+        <div class="small">Recent edits:</div>
+        <div class="list-inline">
+            {% for change in changes.changes[:6] %}
+                <span class="badge">{{ change.image_id[:6] }} +{{ change.added|length }} -{{ change.removed|length }}{% if change.reordered %} ↕{% endif %}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="small">No staged edits yet.</div>
+        {% endif %}
+    </div>
+
+    <div class="card stack">
+        <form id="filters-form" class="stack" hx-get="/dataset" hx-target="#dataset-content" hx-trigger="change delay:250ms, submit" hx-swap="innerHTML">
+            <div class="row wrap">
+                <div style="flex:1; min-width: 180px;">
+                    <label class="small">Filename contains</label>
+                    <input class="filter-field" name="filename_contains" value="{{ filters.filename_contains or '' }}" placeholder="substring" />
+                </div>
+                <div style="flex:1; min-width: 180px;">
+                    <label class="small">Has tag</label>
+                    <input class="filter-field" list="tag-list" name="has_tag" value="{{ filters.has_tag or '' }}" placeholder="tap a tag" />
+                    <datalist id="tag-list">
+                        {% for tag in summary.tags %}
+                        <option value="{{ tag.tag }}">{{ tag.tag }}</option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+            </div>
+            <div class="row wrap">
+                <label class="row" style="gap:0.35rem;">
+                    <input class="filter-field" type="checkbox" name="has_undesired" value="true" {% if filters.has_undesired %}checked{% endif %}>
+                    <span>Has undesired tags</span>
+                </label>
+                <label class="row" style="gap:0.35rem;">
+                    <input class="filter-field" type="checkbox" name="has_missing_required" value="true" {% if filters.has_missing_required %}checked{% endif %}>
+                    <span>Missing required hints</span>
+                </label>
+                <button type="submit" class="secondary" style="width:auto;">Apply filters</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card stack">
+        <div class="row wrap" style="align-items:flex-start;">
+            <div style="flex:2; min-width: 200px;">
+                <div class="small">Bulk edit</div>
+                <form class="stack" hx-post="/api/ops/bulk" hx-target="#bulk-result" hx-include="#filters-form, .image-select:checked" hx-on::after-request="refreshDatasetSection()">
+                    <div class="row wrap">
+                        <select name="scope[mode]">
+                            <option value="all">All images</option>
+                            <option value="filtered" selected>Filtered</option>
+                            <option value="selected">Selected</option>
+                        </select>
+                        <select name="op[type]">
+                            <option value="add">Add</option>
+                            <option value="delete">Delete</option>
+                            <option value="replace">Replace</option>
+                        </select>
+                    </div>
+                    <input name="op[tag]" placeholder="tag" />
+                    <div class="row wrap">
+                        <input name="op[old_tag]" placeholder="old tag (replace)" />
+                        <input name="op[new_tag]" placeholder="new tag (replace)" />
+                    </div>
+                    <button type="submit" class="secondary">Stage bulk change</button>
+                </form>
+                <div id="bulk-result" class="small"></div>
+            </div>
+            <div style="flex:1; min-width: 200px;">
+                <div class="small">Tag panel</div>
+                <div class="list-inline">
+                    {% for tag in summary.tags %}
+                    <button class="tag {% if tag.is_undesired %}danger{% endif %}" hx-get="/dataset?has_tag={{ tag.tag | urlencode }}" hx-target="#dataset-content" hx-swap="innerHTML">{{ tag.tag }} ({{ tag.count }})</button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-grid" id="image-grid">
+        {% for img in summary.images %}
+        <div class="card stack">
+            <label class="row" style="gap:0.35rem;">
+                <input type="checkbox" class="image-select" name="selected_image_ids" value="{{ img.image_id }}">
+                <span class="small">Select</span>
+            </label>
+            <a href="/image/{{ img.image_id }}">
+                <img class="img-thumb" src="/img/thumb/{{ img.image_id }}?w=320" alt="{{ img.filename }}">
+            </a>
+            <div>{{ img.filename }}</div>
+            <div class="small">{{ img.rel_path }}</div>
+            <div class="row wrap">
+                <span class="badge">{{ img.tag_count }} tags</span>
+                {% if img.has_undesired %}<span class="badge" style="border-color: var(--danger); color:#fecaca;">Undesired</span>{% endif %}
+                {% if img.hints.missing_required %}<span class="badge warn">Missing required</span>{% endif %}
+            </div>
+            {% if img.hints.possibly_missing %}
+            <div class="small">Needs review: {{ img.hints.possibly_missing | join(', ') }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% if summary.images|length == 0 %}
+        <div class="card">No images match these filters.</div>
+        {% endif %}
+    </div>
+</div>
