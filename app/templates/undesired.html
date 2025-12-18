@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Undesired Tags{% endblock %}
+{% block content %}
+<section class="stack">
+    <div class="card stack">
+        <div class="small">Tags highlighted red across the app.</div>
+        <form class="row wrap" hx-post="/api/undesired/add" hx-target="#undesired-feedback" hx-on::after-request="location.reload()">
+            <input name="tag" placeholder="add tag" />
+            <button type="submit" class="secondary" style="width:auto;">Add</button>
+        </form>
+        <div id="undesired-feedback" class="small"></div>
+    </div>
+    <div class="card stack">
+        <div class="list-inline">
+            {% for tag in tags %}
+            <form hx-post="/api/undesired/remove" hx-target="#undesired-feedback" hx-on::after-request="location.reload()" style="display:inline;">
+                <input type="hidden" name="tag" value="{{ tag }}">
+                <button type="submit" class="tag danger" style="border:none;">{{ tag }} ✕</button>
+            </form>
+            {% endfor %}
+            {% if not tags %}
+            <div class="small">No undesired tags configured.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

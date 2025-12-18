@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Image {{ image.image_id[:6] }}{% endblock %}
+{% block content %}
+<section class="stack">
+    <a class="secondary button" href="/dataset">Back to dataset</a>
+    <div class="card stack">
+        <div class="row wrap" style="gap:1rem;">
+            <div style="flex:2; min-width:220px;">
+                <img src="/img/full/{{ image.image_id }}" alt="{{ image.rel_path }}" style="width:100%; border-radius:12px;">
+                <div class="small">{{ image.rel_path }}</div>
+            </div>
+            <div style="flex:1; min-width:220px;" class="stack">
+                <div class="small">Hints</div>
+                {% if hints.missing_required %}
+                <div class="badge warn">Missing: {{ hints.missing_required | join(', ') }}</div>
+                {% endif %}
+                {% if hints.possibly_missing %}
+                <div class="badge warn">Possible: {{ hints.possibly_missing | join(', ') }}</div>
+                {% endif %}
+                {% if hints.not_required %}
+                <div class="badge">Not required: {{ hints.not_required | join(', ') }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="card stack">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+            <div>
+                <div class="small">Tags (drag to reorder)</div>
+                <div id="reorder-status" class="small"></div>
+            </div>
+            <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()">
+                <input type="hidden" name="type" value="add">
+                <div class="row wrap">
+                    <input name="tag" placeholder="new tag" />
+                    <button type="submit" class="secondary" style="width:auto;">Add</button>
+                </div>
+            </form>
+        </div>
+        <ul id="tag-list" class="stack" data-sortable="tags" data-image-id="{{ image.image_id }}" style="list-style:none; padding-left:0; gap:0.35rem;">
+            {% for tag in image.tags_current %}
+            <li data-tag-value="{{ tag }}" class="tag {% if tag in undesired_tags %}danger{% endif %}">
+                <span>{{ tag }}</span>
+                <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()" style="margin-left:0.5rem; width:auto; display:inline;">
+                    <input type="hidden" name="type" value="delete">
+                    <input type="hidden" name="tag" value="{{ tag }}">
+                    <button type="submit" class="secondary" style="width:auto;">✕</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        <div id="tag-feedback" class="small"></div>
+    </div>
+</section>
+{% endblock %}
