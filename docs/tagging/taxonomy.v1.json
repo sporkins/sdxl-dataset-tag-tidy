@@ -1,0 +1,254 @@
+{
+  "schema_version": "1.0",
+  "taxonomy_version": "v1",
+  "format": {
+    "case": "lowercase",
+    "separator": ", ",
+    "structure": "flat_set",
+    "atomic_tags_only": true
+  },
+  "tiers": {
+    "tier_1_hard": {
+      "description": "Finite, strict lists. When applicable, must pick from allowed values. No paraphrases.",
+      "allows_freeform": false
+    },
+    "tier_2_soft": {
+      "description": "Preferred list, but may use a single atomic freeform phrase if none apply.",
+      "allows_freeform": true
+    },
+    "tier_3_ungoverned": {
+      "description": "Allowed but not validated by this taxonomy. Not used for completeness rules.",
+      "allows_freeform": true
+    }
+  },
+  "categories": [
+    {
+      "id": "framing",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "generally_applicable"
+      },
+      "allowed_values": [
+        "close-up",
+        "portrait",
+        "upper body",
+        "half body",
+        "full body"
+      ],
+      "notes": [
+        "Choose at most one when applicable.",
+        "May be omitted if you cannot confidently choose."
+      ]
+    },
+    {
+      "id": "view_angle",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "not_extreme_closeup_preferred"
+      },
+      "allowed_values": [
+        "front view",
+        "side view",
+        "from behind",
+        "from above",
+        "from below"
+      ],
+      "notes": [
+        "Choose exactly one when applicable.",
+        "May be omitted for extreme close-ups."
+      ]
+    },
+    {
+      "id": "pose",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "lower_body_and_ground_contact_visible"
+      },
+      "allowed_values": [
+        "standing",
+        "sitting",
+        "lying",
+        "kneeling",
+        "walking",
+        "running",
+        "crouching"
+      ],
+      "notes": [
+        "Only include when lower body and ground contact are visible.",
+        "Otherwise omit."
+      ]
+    },
+    {
+      "id": "gaze",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "face_visible"
+      },
+      "allowed_values": [
+        "looking at viewer",
+        "looking to the side",
+        "looking up",
+        "looking down"
+      ],
+      "notes": [
+        "Required when face is visible."
+      ]
+    },
+    {
+      "id": "expression",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "face_visible"
+      },
+      "allowed_values": [
+        "neutral expression",
+        "smile",
+        "grin",
+        "frown"
+      ],
+      "notes": [
+        "Required when face is visible."
+      ]
+    },
+    {
+      "id": "mouth_state",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "face_visible"
+      },
+      "allowed_values": [
+        "open mouth",
+        "closed mouth"
+      ],
+      "notes": [
+        "Required when face is visible."
+      ]
+    },
+    {
+      "id": "eyes_state",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "face_visible"
+      },
+      "allowed_values": [
+        "closed eyes"
+      ],
+      "notes": [
+        "Optional when face is visible. Absence implies eyes open."
+      ]
+    },
+    {
+      "id": "arm_hand_position",
+      "tier": "tier_2_soft",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "generally_applicable"
+      },
+      "preferred_values": [
+        "arms crossed",
+        "hands on hips",
+        "hands behind head",
+        "arms up",
+        "one hand raised"
+      ],
+      "freeform_policy": {
+        "allowed": true,
+        "constraints": [
+          "single_concept",
+          "visually_obvious",
+          "short_phrase"
+        ]
+      },
+      "notes": [
+        "If none of the preferred values apply, a single atomic freeform value may be used."
+      ]
+    },
+    {
+      "id": "hair_style",
+      "tier": "tier_1_hard",
+      "cardinality": {
+        "min": 0,
+        "max": 1
+      },
+      "applicability": {
+        "when": "hair_visible"
+      },
+      "allowed_values": [
+        "long hair",
+        "medium hair",
+        "short hair",
+        "ponytail",
+        "hair bun",
+        "twintails"
+      ],
+      "notes": [
+        "Optional. Omit if not visible or unclear."
+      ]
+    }
+  ],
+  "tier_3_allowed_tags": {
+    "generic_clothing_and_accessories": {
+      "validation": "none",
+      "examples": [
+        "leotard",
+        "swimsuit",
+        "shirt",
+        "tank top",
+        "dress",
+        "skirt",
+        "headband",
+        "scrunchie"
+      ]
+    },
+    "special_tags": {
+      "validation": "exact_match_only",
+      "allowed_values": [
+        "text on clothing"
+      ]
+    }
+  },
+  "global_exclusions": {
+    "description": "Out of scope and should be flagged by consumers that implement exclusions checking.",
+    "examples": [
+      "identity tokens, names, handles, unique identifiers",
+      "anatomy descriptors (face, nose, skin, freckles, eyebrows)",
+      "roles/professions/inferred activities",
+      "age descriptors",
+      "personality traits or emotions beyond expression category",
+      "eye color",
+      "brand names or logos",
+      "style/aesthetic or image quality descriptors"
+    ]
+  }
+}

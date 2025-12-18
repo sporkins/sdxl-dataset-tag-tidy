@@ -1,0 +1,158 @@
+{
+  "graph_version": "1.0",
+  "taxonomy_version": "v1",
+  "signals": {
+    "extreme_closeup": {
+      "type": "derived",
+      "derivation": {
+        "op": "tag_present",
+        "args": {
+          "tag": "close-up"
+        }
+      },
+      "notes": [
+        "If close-up is present, treat as extreme_closeup."
+      ]
+    },
+    "face_visible": {
+      "type": "derived",
+      "derivation": {
+        "op": "not",
+        "args": {
+          "op": "tag_present",
+          "args": {
+            "tag": "from behind"
+          }
+        }
+      },
+      "notes": [
+        "If 'from behind' is present, face_visible is false.",
+        "v1 does not include occlusion tags; future versions may refine face visibility."
+      ]
+    },
+    "lower_body_and_ground_contact_visible": {
+      "type": "external",
+      "notes": [
+        "Perceptual condition. Implementations may estimate via CV/metadata/user input.",
+        "If unknown, treat pose as optional and do not warn for missing pose."
+      ]
+    },
+    "hair_visible": {
+      "type": "external",
+      "notes": [
+        "Perceptual condition. If unknown, treat hair_style as optional with no missing warnings."
+      ]
+    }
+  },
+  "constraints": [
+    {
+      "id": "C1_required_face_categories_when_face_visible",
+      "when": {
+        "signal": "face_visible",
+        "equals": true
+      },
+      "require": [
+        {
+          "category": "gaze",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "category": "expression",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "category": "mouth_state",
+          "min": 1,
+          "max": 1
+        }
+      ],
+      "notes": [
+        "When face is visible, these categories must be present exactly once."
+      ]
+    },
+    {
+      "id": "C2_forbid_face_categories_when_face_not_visible",
+      "when": {
+        "signal": "face_visible",
+        "equals": false
+      },
+      "forbid_tags": [
+        "looking at viewer",
+        "looking to the side",
+        "looking up",
+        "looking down",
+        "neutral expression",
+        "smile",
+        "grin",
+        "frown",
+        "open mouth",
+        "closed mouth",
+        "closed eyes"
+      ],
+      "notes": [
+        "When face is not visible, omit all face-related tags.",
+        "This checks by tag list so it can be applied to raw tag sets."
+      ]
+    },
+    {
+      "id": "C3_closeup_relaxes_view_and_pose",
+      "when": {
+        "signal": "extreme_closeup",
+        "equals": true
+      },
+      "relax": [
+        {
+          "category": "view_angle",
+          "missing_ok": true
+        },
+        {
+          "category": "pose",
+          "missing_ok": true
+        }
+      ],
+      "notes": [
+        "In extreme close-ups, view and pose may be omitted without warnings."
+      ]
+    },
+    {
+      "id": "C4_pose_only_when_lower_body_visible",
+      "when": {
+        "signal": "lower_body_and_ground_contact_visible",
+        "equals": true
+      },
+      "require": [
+        {
+          "category": "pose",
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "notes": [
+        "Pose is encouraged only when lower body and ground contact are visible.",
+        "If the signal is false, pose should generally be omitted."
+      ]
+    }
+  ],
+  "consistency_checks": [
+    {
+      "id": "K1_singleton_categories",
+      "categories": [
+        "framing",
+        "view_angle",
+        "pose",
+        "gaze",
+        "expression",
+        "mouth_state",
+        "eyes_state",
+        "arm_hand_position",
+        "hair_style"
+      ],
+      "rule": "no_more_than_one_value_each",
+      "notes": [
+        "Each category should appear at most once in the tag set."
+      ]
+    }
+  ]
+}
