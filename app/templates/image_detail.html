@@ -39,7 +39,7 @@
         </div>
         <ul id="tag-list" class="stack" data-sortable="tags" data-image-id="{{ image.image_id }}" style="list-style:none; padding-left:0; gap:0.35rem;">
             {% for tag in image.tags_current %}
-            <li data-tag-value="{{ tag }}" class="tag {% if tag in undesired_tags %}danger{% endif %}">
+            <li data-tag-value="{{ tag }}" class="tag {% if tag|lower in undesired_tags %}danger{% endif %}">
                 <span>{{ tag }}</span>
                 <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()" style="margin-left:0.5rem; width:auto; display:inline;">
                     <input type="hidden" name="type" value="delete">

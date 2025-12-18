@@ -85,13 +85,14 @@ def image_detail(request: Request, image_id: str, manager: DatasetManager = Depe
     from app.services.tag_service import TagService
 
     hints_map = TagService.compute_hints(image.tags_current)
+    undesired_lookup = {tag.lower() for tag in config.load_undesired_tags()}
     return templates.TemplateResponse(
         "image_detail.html",
         {
             "request": request,
             "image": image,
             "hints": hints_map,
-            "undesired_tags": config.load_undesired_tags(),
+            "undesired_tags": undesired_lookup,
         },
     )
 
