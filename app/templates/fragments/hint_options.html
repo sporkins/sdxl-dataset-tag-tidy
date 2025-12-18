@@ -1,0 +1,17 @@
+{% set category_slug = category.replace(' ', '-') %}
+<div id="hint-{{ category_slug }}" class="stack" style="gap:0.5rem;">
+    <div class="badge {{ 'warn' if hint_type == 'missing' else 'accent' }}">{{ 'Missing' if hint_type == 'missing' else 'Possible' }}: {{ category }}</div>
+    {% if options %}
+    <div class="row wrap" style="gap:0.35rem;">
+        {% for option in options %}
+        <form hx-post="/api/image/{{ image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()" style="width:auto; display:flex; gap:0.25rem; align-items:center;">
+            <input type="hidden" name="type" value="add">
+            <input type="hidden" name="tag" value="{{ option }}">
+            <button type="submit" class="secondary" style="width:auto;">Add "{{ option }}"</button>
+        </form>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="small">No preset options available{% if allows_freeform %}, try adding your own tag{% endif %}.</div>
+    {% endif %}
+</div>

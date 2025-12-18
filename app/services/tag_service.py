@@ -38,3 +38,8 @@ class TagService:
     def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
         engine = TagService._get_engine()
         return engine.categorize(tags)
+
+    @staticmethod
+    def hint_options(category_id: str) -> Dict[str, object]:
+        engine = TagService._get_engine()
+        return engine.hint_options(category_id)

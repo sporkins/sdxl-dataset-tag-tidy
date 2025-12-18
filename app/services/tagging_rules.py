@@ -20,6 +20,8 @@ class CategoryDefinition:
     applicability: str
     allowed_values: Set[str]
     preferred_values: Set[str]
+    allowed_values_raw: List[str]
+    preferred_values_raw: List[str]
     allows_freeform: bool
 
     def matches(self, tag: str) -> bool:
@@ -65,6 +67,8 @@ class TaggingSpec:
                 applicability=str(category.get("applicability", {}).get("when", "generally_applicable")),
                 allowed_values=allowed_values,
                 preferred_values=preferred_values,
+                allowed_values_raw=list(category.get("allowed_values", [])),
+                preferred_values_raw=list(category.get("preferred_values", [])),
                 allows_freeform=allows_freeform,
             )
             self.categories[definition.id] = definition
@@ -192,6 +196,21 @@ class TaggingRulesEngine:
     def categorize(self, tags: List[str]) -> Dict[str, List[str]]:
         normalized = [_canonicalize_tag(tag) for tag in tags if str(tag).strip()]
         return self.spec.categorize_tags(normalized)
+
+    def hint_options(self, category_id: str) -> Dict[str, object]:
+        category = self.spec.categories.get(category_id)
+        if not category:
+            return {"category": category_id, "options": [], "allows_freeform": False}
+
+        options: List[str] = []
+        for value in category.preferred_values_raw:
+            if value not in options:
+                options.append(value)
+        for value in category.allowed_values_raw:
+            if value not in options:
+                options.append(value)
+
+        return {"category": category_id, "options": options, "allows_freeform": category.allows_freeform}
 
     def _build_hints(
         self,

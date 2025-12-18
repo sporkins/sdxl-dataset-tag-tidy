@@ -11,15 +11,25 @@
             </div>
             <div style="flex:1; min-width:220px;" class="stack">
                 <div class="small">Hints</div>
-                {% if hints.missing_required %}
-                <div class="badge warn">Missing: {{ hints.missing_required | join(', ') }}</div>
-                {% endif %}
-                {% if hints.possibly_missing %}
-                <div class="badge warn">Possible: {{ hints.possibly_missing | join(', ') }}</div>
-                {% endif %}
-                {% if hints.not_required %}
-                <div class="badge">Not required: {{ hints.not_required | join(', ') }}</div>
-                {% endif %}
+                <div class="stack" style="gap:0.5rem;">
+                    {% for category in hints.missing_required %}
+                    {% set slug = category.replace(' ', '-') %}
+                    <div id="hint-{{ slug }}" class="row wrap" style="gap:0.5rem; align-items:center;">
+                        <div class="badge warn">Missing: {{ category }}</div>
+                        <button type="button" class="secondary" style="width:auto;" hx-get="/api/image/{{ image.image_id }}/hint-options?category={{ category | urlencode }}&hint_type=missing" hx-target="#hint-{{ slug }}" hx-swap="outerHTML">Choose</button>
+                    </div>
+                    {% endfor %}
+                    {% for category in hints.possibly_missing %}
+                    {% set slug = category.replace(' ', '-') %}
+                    <div id="hint-{{ slug }}" class="row wrap" style="gap:0.5rem; align-items:center;">
+                        <div class="badge warn">Possible: {{ category }}</div>
+                        <button type="button" class="secondary" style="width:auto;" hx-get="/api/image/{{ image.image_id }}/hint-options?category={{ category | urlencode }}&hint_type=possible" hx-target="#hint-{{ slug }}" hx-swap="outerHTML">Choose</button>
+                    </div>
+                    {% endfor %}
+                    {% if hints.not_required %}
+                    <div class="badge">Not required: {{ hints.not_required | join(', ') }}</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
