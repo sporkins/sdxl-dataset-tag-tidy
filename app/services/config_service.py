@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from app.models import ThumbnailCacheSettings
 
 
 class ConfigService:
     DEFAULT_CONFIG = {
+        "dataset_root": "",
         "thumbnail_cache": {
             "enabled": False,
             "mode": "disk",
@@ -46,8 +47,22 @@ class ConfigService:
         temp_path.replace(path)
 
     def _load_thumbnail_settings(self) -> ThumbnailCacheSettings:
-        data = self._load_json_file(self.config_path, self.DEFAULT_CONFIG)
-        return ThumbnailCacheSettings.from_dict(data)
+        return ThumbnailCacheSettings.from_dict(self.load_config())
+
+    def load_config(self) -> Dict[str, Any]:
+        return self._load_json_file(self.config_path, self.DEFAULT_CONFIG)
+
+    def get_dataset_root(self) -> Optional[Path]:
+        data = self.load_config()
+        dataset_root = data.get("dataset_root") if isinstance(data, dict) else ""
+        if not dataset_root:
+            return None
+        return Path(str(dataset_root)).expanduser()
+
+    def save_dataset_root(self, path: Path) -> None:
+        config = self.load_config()
+        config["dataset_root"] = str(path)
+        self._write_json_file(self.config_path, config)
 
     def load_undesired_tags(self) -> List[str]:
         data = self._load_json_file(self.undesired_path, self.DEFAULT_UNDESIRED)

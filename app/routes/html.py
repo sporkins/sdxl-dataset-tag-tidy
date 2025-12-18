@@ -19,19 +19,29 @@ templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent
 
 
 @router.get("/")
-def dataset_picker(request: Request, rel: str | None = None, manager: DatasetManager = Depends(get_dataset_manager)):
+def dataset_picker(
+    request: Request,
+    rel: str | None = None,
+    manager: DatasetManager = Depends(get_dataset_manager),
+    config: ConfigService = Depends(get_config_service),
+):
     error_message = None
+    dataset_root = config.get_dataset_root()
+    dataset_root_label = f"{dataset_root.as_posix()} (root)" if dataset_root else "Dataset root not set"
+    default_browse = {"current": {"rel": ""}, "parent": {"rel": ""}, "dirs": [], "summary": {"eligible_image_count_recursive": 0}}
     try:
-        browse_data = manager.browse(rel or "")
+        browse_data = manager.browse(rel or "") if dataset_root else default_browse
     except HTTPException as exc:  # type: ignore[catching-any]
         detail = exc.detail if isinstance(exc.detail, dict) else {}
         error_message = detail.get("error", {}).get("message", "Unable to browse dataset root.")
-        browse_data = {"current": {"rel": ""}, "parent": {"rel": ""}, "dirs": [], "summary": {"eligible_image_count_recursive": 0}}
+        browse_data = default_browse
     context = {
         "request": request,
         "browse": browse_data,
         "dataset_rel": manager.get_dataset_rel(),
         "error_message": error_message,
+        "dataset_root": dataset_root,
+        "dataset_root_label": dataset_root_label,
     }
     if request.headers.get("HX-Request"):
         return templates.TemplateResponse("fragments/picker_browser.html", context)

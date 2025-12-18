@@ -19,12 +19,13 @@ from app.services.tag_service import TagService
 
 
 class DatasetManager:
-    def __init__(self, dataset_root: Path, config_service: ConfigService):
-        self.dataset_root = dataset_root.resolve()
+    def __init__(self, config_service: ConfigService):
         self.config_service = config_service
+        self.dataset_root: Optional[Path] = None
         self.dataset_rel: Optional[str] = None
         self.dataset_path: Optional[Path] = None
         self.images: Dict[str, ImageData] = {}
+        self.refresh_dataset_root()
 
     def _error(self, status_code: int, code: str, message: str) -> HTTPException:
         return HTTPException(status_code=status_code, detail={"error": {"code": code, "message": message}})
@@ -42,16 +43,32 @@ class DatasetManager:
             raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_PATH", "Path traversal is not allowed.")
         return normalized.as_posix()
 
+    def refresh_dataset_root(self) -> None:
+        configured = self.config_service.get_dataset_root()
+        new_root = configured.resolve() if configured else None
+        if new_root != self.dataset_root:
+            self.dataset_root = new_root
+            self.dataset_rel = None
+            self.dataset_path = None
+            self.images = {}
+
+    def _require_dataset_root(self) -> Path:
+        if not self.dataset_root:
+            raise self._error(status.HTTP_503_SERVICE_UNAVAILABLE, "NO_ROOT", "Dataset root is not configured.")
+        return self.dataset_root
+
     def _resolve_rel(self, rel: Optional[str]) -> Tuple[str, Path]:
         normalized = self._normalize_rel(rel)
-        target = (self.dataset_root / normalized).resolve()
+        root = self._require_dataset_root()
+        target = (root / normalized).resolve()
         try:
-            target.relative_to(self.dataset_root)
+            target.relative_to(root)
         except ValueError:
             raise self._error(status.HTTP_403_FORBIDDEN, "FORBIDDEN", "Path escapes dataset root.")
         return normalized, target
 
     def browse(self, rel: Optional[str]) -> Dict[str, object]:
+        self.refresh_dataset_root()
         normalized, target = self._resolve_rel(rel)
         if not target.exists():
             raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Folder does not exist.")
@@ -80,6 +97,7 @@ class DatasetManager:
         return count
 
     def load_dataset(self, rel: str) -> Dict[str, object]:
+        self.refresh_dataset_root()
         normalized, target = self._resolve_rel(rel)
         if not target.exists():
             raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Folder does not exist.")
@@ -331,7 +349,7 @@ class DatasetManager:
         image = self.get_image(image_id)
         return image.abs_path
 
-    def get_dataset_root(self) -> Path:
+    def get_dataset_root(self) -> Optional[Path]:
         return self.dataset_root
 
     def get_dataset_rel(self) -> Optional[str]:

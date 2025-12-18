@@ -69,7 +69,8 @@ document.body.addEventListener('click', (event) => {
     }
     const label = document.getElementById('selected-path-label');
     if (label) {
-      label.textContent = rel || 'training (root)';
+      const rootLabel = hidden?.dataset.rootLabel || 'training (root)';
+      label.textContent = rel || rootLabel;
     }
   }
 });

@@ -45,6 +45,30 @@ def browse(rel: str | None = None, manager: DatasetManager = Depends(get_dataset
     return manager.browse(rel)
 
 
+@router.post("/config/dataset-root")
+async def set_dataset_root(
+    request: Request,
+    manager: DatasetManager = Depends(get_dataset_manager),
+    config: ConfigService = Depends(get_config_service),
+):
+    payload = await _coerce_payload(request)
+    root_value = (payload.get("dataset_root") or "").strip()
+    if not root_value:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": {"code": "INVALID_ROOT", "message": "Dataset root is required."}},
+        )
+    root_path = Path(root_value)
+    if not root_path.exists() or not root_path.is_dir():
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": {"code": "INVALID_ROOT", "message": "Dataset root must be an existing folder."}},
+        )
+    config.save_dataset_root(root_path)
+    manager.refresh_dataset_root()
+    return {"ok": True, "dataset_root": str(root_path)}
+
+
 @router.post("/dataset/load")
 async def load_dataset(request: Request, manager: DatasetManager = Depends(get_dataset_manager)):
     payload = await _coerce_payload(request)

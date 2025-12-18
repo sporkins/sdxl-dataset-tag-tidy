@@ -25,7 +25,7 @@ This app is a manual dataset hygiene tool, not an AI tagging system.
 - The web app lives under:
   - `C:/Zen/dev`
 - All datasets live under:
-  - `C:/Zen/dev/kohya_ss/training`
+  - Configured via `config/config.json` (git-ignored). Recommended value: `C:/Zen/dev/kohya_ss/training`.
 - All filesystem access must be constrained to that dataset root.
 
 ---
@@ -58,7 +58,7 @@ On save:
 
 ## 4. Directory Selection (No Pasted Paths)
 - The user selects a dataset directory using a server-side folder browser UI.
-- The UI starts at `C:/Zen/dev/kohya_ss/training`.
+- The UI starts at the configured dataset root.
 - The user taps through folders to select a dataset.
 - Free-form path input and pasted paths are forbidden.
 
