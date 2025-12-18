@@ -218,19 +218,6 @@
     }
   ],
   "tier_3_allowed_tags": {
-    "generic_clothing_and_accessories": {
-      "validation": "none",
-      "examples": [
-        "leotard",
-        "swimsuit",
-        "shirt",
-        "tank top",
-        "dress",
-        "skirt",
-        "headband",
-        "scrunchie"
-      ]
-    },
     "special_tags": {
       "validation": "exact_match_only",
       "allowed_values": [
