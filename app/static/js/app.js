@@ -40,6 +40,34 @@ document.addEventListener('DOMContentLoaded', attachInteractions);
 document.body.addEventListener('htmx:afterSwap', attachInteractions);
 
 document.body.addEventListener('click', (event) => {
+  const toggleButton = event.target.closest('[data-toggle-target]');
+  if (toggleButton) {
+    const targetSelector = toggleButton.dataset.toggleTarget || '';
+    const target = targetSelector ? document.querySelector(targetSelector) : null;
+    if (target) {
+      if (!target.dataset.originalDisplay) {
+        target.dataset.originalDisplay = getComputedStyle(target).display || '';
+      }
+
+      const showLabel = toggleButton.dataset.toggleLabelShow || 'Show';
+      const hideLabel = toggleButton.dataset.toggleLabelHide || 'Hide';
+
+      const isHidden = target.hasAttribute('hidden') || getComputedStyle(target).display === 'none';
+      if (isHidden) {
+        target.removeAttribute('hidden');
+        target.style.display = target.dataset.originalDisplay || '';
+        toggleButton.textContent = hideLabel;
+        toggleButton.setAttribute('aria-expanded', 'true');
+      } else {
+        target.setAttribute('hidden', '');
+        target.style.display = 'none';
+        toggleButton.textContent = showLabel;
+        toggleButton.setAttribute('aria-expanded', 'false');
+      }
+    }
+    return;
+  }
+
   const targetButton = event.target.closest('#choose-folder');
   if (targetButton) {
     const rel = targetButton.dataset.rel || '';
