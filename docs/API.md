@@ -3,7 +3,7 @@
 This document defines the HTTP contract for the v1 app described in SPEC.md.
 
 Conventions:
-- The dataset root is fixed: `C:/Zen/dev/kohya_ss/training`
+- The dataset root is configured in `config/config.json` (git-ignored). Set it to your training folder, e.g., `C:/Zen/dev/kohya_ss/training`.
 - The browser never sends absolute paths.
 - The browser sends `rel` paths that are always interpreted as relative to the dataset root.
 - The server must normalize and validate every `rel` to prevent traversal and escaping the root.

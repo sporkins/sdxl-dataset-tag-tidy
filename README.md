@@ -21,7 +21,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 Open `http://localhost:8000` on your LAN device. The UI is touch-friendly and uses HTMX and SortableJS for interactions.
 
 ## Filesystem expectations
-- Dataset root is fixed to `C:/Zen/dev/kohya_ss/training`.
+- Dataset root is configured in `config/config.json` (git-ignored). Set it to your training folder, for example `C:/Zen/dev/kohya_ss/training`.
 - Folder selection is done via the built-in browser; free-form path entry is disabled.
 - Datasets over 200 images are rejected.
 - Tag files are `.txt` sidecars using comma-separated values.
@@ -30,11 +30,11 @@ Open `http://localhost:8000` on your LAN device. The UI is touch-friendly and us
 - Tag edits (bulk or per-image) are staged in memory only.
 - Use **Apply** to write normalized tags back to sidecar files (`, ` separator).
 - Use **Discard** to revert to the originally loaded tags.
-- Undesired tags are persisted to `config/undesired_tags.json`.
+- Undesired tags are persisted to `config/undesired_tags.json` (git-ignored).
 
 ## Configuration
-- `config/config.json` toggles optional thumbnail caching (disk mode, disabled by default).
-- `config/undesired_tags.json` stores the global undesired tag list in the format `{ "tags": [] }`.
+- Copy `config/config.example.json` to `config/config.json` and set `dataset_root` along with optional thumbnail caching (disk mode, disabled by default). The app will also create the file on first run.
+- `config/undesired_tags.json` stores the global undesired tag list in the format `{ "tags": [] }`. A starter `undesired_tags.example.json` is provided; the runtime file is ignored by git.
 
 ## Project layout
 - `app/main.py` – FastAPI app wiring and middleware

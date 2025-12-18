@@ -2,11 +2,11 @@
     <div class="row wrap" style="justify-content: space-between;">
         <div>
             <div class="small">Current</div>
-            <div style="word-break: break-all;">{{ browse.current.rel if browse.current.rel else 'training (root)' }}</div>
+            <div style="word-break: break-all;">{{ browse.current.rel if browse.current.rel else dataset_root_label }}</div>
         </div>
         <div class="row" style="gap: 0.35rem;">
             {% if browse.parent.rel != browse.current.rel %}
-            <button class="secondary" hx-get="/?rel={{ browse.parent.rel | urlencode }}" hx-target="#folder-browser" hx-swap="outerHTML">Up</button>
+            <button class="secondary" hx-get="/?rel={{ browse.parent.rel | urlencode }}" hx-target="#folder-browser" hx-swap="innerHTML">Up</button>
             {% endif %}
             <button class="secondary" id="choose-folder" data-rel="{{ browse.current.rel }}">Select</button>
         </div>
@@ -15,7 +15,7 @@
         {% if browse.dirs %}
             {% for d in browse.dirs %}
             {% set child_rel = browse.current.rel ~ '/' ~ d.name if browse.current.rel else d.name %}
-            <button class="secondary" hx-get="/?rel={{ child_rel | urlencode }}" hx-target="#folder-browser" hx-swap="outerHTML">{{ d.name }}</button>
+            <button class="secondary" hx-get="/?rel={{ child_rel | urlencode }}" hx-target="#folder-browser" hx-swap="innerHTML">{{ d.name }}</button>
             {% endfor %}
         {% else %}
             <div class="small">No subfolders</div>

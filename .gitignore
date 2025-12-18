@@ -10,3 +10,5 @@ __pycache__/
 /.mypy_cache/
 /.pytest_cache/
 /.tag_tidy_cache/
+config/config.json
+config/undesired_tags.json
