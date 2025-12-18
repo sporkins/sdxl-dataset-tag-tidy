@@ -40,6 +40,26 @@ document.addEventListener('DOMContentLoaded', attachInteractions);
 document.body.addEventListener('htmx:afterSwap', attachInteractions);
 
 document.body.addEventListener('click', (event) => {
+  const toggleButton = event.target.closest('[data-toggle-target]');
+  if (toggleButton) {
+    const target = document.querySelector(toggleButton.dataset.toggleTarget || '');
+    if (target) {
+      const showLabel = toggleButton.dataset.toggleLabelShow || 'Show';
+      const hideLabel = toggleButton.dataset.toggleLabelHide || 'Hide';
+      const isHidden = target.hasAttribute('hidden');
+      if (isHidden) {
+        target.removeAttribute('hidden');
+        toggleButton.textContent = hideLabel;
+        toggleButton.setAttribute('aria-expanded', 'true');
+      } else {
+        target.setAttribute('hidden', '');
+        toggleButton.textContent = showLabel;
+        toggleButton.setAttribute('aria-expanded', 'false');
+      }
+    }
+    return;
+  }
+
   const targetButton = event.target.closest('#choose-folder');
   if (targetButton) {
     const rel = targetButton.dataset.rel || '';
