@@ -18,6 +18,7 @@ function attachInteractions() {
     el.dataset.bound = 'true';
     Sortable.create(el, {
       animation: 150,
+      handle: '.drag-handle',
       onEnd: () => {
         const imageId = el.dataset.imageId;
         const tags = Array.from(el.querySelectorAll('[data-tag-value]')).map((li) => li.dataset.tagValue);
@@ -40,6 +41,26 @@ document.addEventListener('DOMContentLoaded', attachInteractions);
 document.body.addEventListener('htmx:afterSwap', attachInteractions);
 
 document.body.addEventListener('click', (event) => {
+  const editButton = event.target.closest('.edit-tag-btn');
+  if (editButton) {
+    const currentValue = editButton.dataset.currentValue || '';
+    const imageId = editButton.dataset.imageId;
+    const index = editButton.dataset.index;
+    const newValue = window.prompt('Edit tag', currentValue);
+    if (newValue === null) return;
+    const trimmed = newValue.trim();
+    if (!trimmed) return;
+
+    fetch(`/api/image/${imageId}/ops`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'edit', index, old_tag: currentValue, new_tag: trimmed }),
+    }).then(() => {
+      window.location.reload();
+    });
+    return;
+  }
+
   const toggleButton = event.target.closest('[data-toggle-target]');
   if (toggleButton) {
     const target = document.querySelector(toggleButton.dataset.toggleTarget || '');
