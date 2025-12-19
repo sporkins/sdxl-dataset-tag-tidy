@@ -59,9 +59,11 @@
         </div>
         <ul id="tag-list" class="stack" data-sortable="tags" data-image-id="{{ image.image_id }}" style="list-style:none; padding-left:0; gap:0.35rem;">
             {% for tag in image.tags_current %}
-            <li data-tag-value="{{ tag }}" class="tag {% if tag|lower in undesired_tags %}danger{% endif %}">
+            <li data-tag-value="{{ tag }}" data-tag-index="{{ loop.index0 }}" class="tag {% if tag|lower in undesired_tags %}danger{% endif %}">
+                <button type="button" class="secondary drag-handle" aria-label="Reorder tag" style="width:auto; margin-right:0.35rem;">↕</button>
                 <span>{{ tag }}</span>
-                <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()" style="margin-left:0.5rem; width:auto; display:inline;">
+                <button type="button" class="secondary edit-tag-btn" data-image-id="{{ image.image_id }}" data-index="{{ loop.index0 }}" data-current-value="{{ tag }}" aria-label="Edit tag" style="width:auto; margin-left:0.35rem;">✎</button>
+                <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()" style="margin-left:0.35rem; width:auto; display:inline;">
                     <input type="hidden" name="type" value="delete">
                     <input type="hidden" name="tag" value="{{ tag }}">
                     <button type="submit" class="secondary" style="width:auto;">✕</button>

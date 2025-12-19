@@ -236,6 +236,37 @@ class DatasetManager:
             if not self._tags_match(normalized_new, image.tags_current):
                 raise self._error(status.HTTP_422_UNPROCESSABLE_ENTITY, "INVALID_REORDER", "Tags must match current set.")
             image.tags_current = normalized_new
+        elif op_type == "edit":
+            new_tag = (op.get("new_tag") or "").strip()
+            if not new_tag:
+                raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_OP", "New tag is required.")
+
+            index = op.get("index")
+            old_tag = (op.get("old_tag") or "").strip()
+
+            try:
+                normalized_index = int(index) if index is not None else None
+            except (TypeError, ValueError):
+                raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_OP", "Index must be a number.")
+
+            updated_tags = list(image.tags_current)
+
+            if normalized_index is not None:
+                if normalized_index < 0 or normalized_index >= len(updated_tags):
+                    raise self._error(status.HTTP_422_UNPROCESSABLE_ENTITY, "INVALID_OP", "Index out of range.")
+                if old_tag and updated_tags[normalized_index] != old_tag:
+                    raise self._error(status.HTTP_422_UNPROCESSABLE_ENTITY, "INVALID_OP", "Tag mismatch at index.")
+                updated_tags[normalized_index] = new_tag
+            elif old_tag:
+                try:
+                    position = updated_tags.index(old_tag)
+                except ValueError:
+                    raise self._error(status.HTTP_422_UNPROCESSABLE_ENTITY, "INVALID_OP", "Tag not found.")
+                updated_tags[position] = new_tag
+            else:
+                raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_OP", "Specify a tag to edit.")
+
+            image.tags_current = updated_tags
         else:
             raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_OP", "Unsupported operation.")
 
