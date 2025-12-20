@@ -127,6 +127,7 @@ class DatasetManager:
                 abs_path=img_path,
                 tags_original=tags,
                 tags_current=list(tags),
+                is_complete=False,
             )
 
         unique_tags = set()
@@ -156,7 +157,7 @@ class DatasetManager:
         for image in self._filtered_images(criteria):
             for tag in image.tags_current:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
-            hints = TagService.compute_hints(image.tags_current)
+            hints = self._image_hints(image)
             images_payload.append(
                 {
                     "image_id": image.image_id,
@@ -164,6 +165,7 @@ class DatasetManager:
                     "rel_path": image.rel_path,
                     "tag_count": len(image.tags_current),
                     "has_undesired": bool(undesired_tags.intersection(set(t.lower() for t in image.tags_current))),
+                    "is_complete": image.is_complete,
                     "hints": hints,
                 }
             )
@@ -189,13 +191,19 @@ class DatasetManager:
             if criteria.has_tag:
                 if criteria.has_tag not in image.tags_current:
                     continue
+            if criteria.is_complete is not None:
+                if bool(image.is_complete) != bool(criteria.is_complete):
+                    continue
             if criteria.has_undesired is not None:
                 has_flag = bool(undesired_set.intersection({t.lower() for t in image.tags_current}))
                 if has_flag != bool(criteria.has_undesired):
                     continue
             if criteria.has_missing_required is not None:
-                hints = TagService.compute_hints(image.tags_current)
-                missing = bool(hints.get("missing_required"))
+                if image.is_complete:
+                    missing = False
+                else:
+                    hints = TagService.compute_hints(image.tags_current)
+                    missing = bool(hints.get("missing_required"))
                 if missing != bool(criteria.has_missing_required):
                     continue
             yield image
@@ -428,6 +436,13 @@ class DatasetManager:
             raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Image not found.")
         return image
 
+    def set_image_complete(self, image_id: str, complete: bool) -> Dict[str, object]:
+        image = self.images.get(image_id)
+        if not image:
+            raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Image not found.")
+        image.is_complete = bool(complete)
+        return {"image_id": image_id, "is_complete": image.is_complete}
+
     def require_loaded(self) -> None:
         if not self.dataset_path:
             raise self._error(status.HTTP_404_NOT_FOUND, "NO_DATASET", "No dataset loaded.")
@@ -442,3 +457,8 @@ class DatasetManager:
 
     def get_dataset_rel(self) -> Optional[str]:
         return self.dataset_rel
+
+    def _image_hints(self, image: ImageData) -> Dict[str, List[str]]:
+        if image.is_complete:
+            return {"missing_required": [], "possibly_missing": [], "not_required": [], "info": []}
+        return TagService.compute_hints(image.tags_current)

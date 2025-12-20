@@ -13,6 +13,11 @@
                 <a class="secondary button" href="/image/{{ neighbors.next }}">Next →</a>
                 {% endif %}
             </div>
+            <form class="row" style="gap:0.35rem;" hx-post="/api/image/{{ image.image_id }}/complete" hx-swap="none" hx-on::after-request="handleCompletionToggle(event)">
+                <input type="hidden" name="complete" value="{{ not image.is_complete }}">
+                <button type="submit" class="secondary" style="width:auto;">{% if image.is_complete %}Mark incomplete{% else %}Mark complete{% endif %}</button>
+                <span id="completion-badge" class="badge {% if image.is_complete %}success{% endif %}">{% if image.is_complete %}Complete{% else %}Incomplete{% endif %}</span>
+            </form>
         </div>
         <div class="row wrap" style="gap:1rem;">
             <div style="flex:2; min-width:220px;">
@@ -21,7 +26,10 @@
             </div>
             <div style="flex:1; min-width:220px;" class="stack">
                 <div class="small">Hints</div>
-                <div class="stack" style="gap:0.5rem;">
+                <div class="stack" style="gap:0.5rem;" id="hints-complete" {% if not image.is_complete %}hidden{% endif %}>
+                    <div class="badge success">Complete — hints hidden</div>
+                </div>
+                <div class="stack" style="gap:0.5rem;" id="hints-active" {% if image.is_complete %}hidden{% endif %}>
                     {% for category in hints.missing_required %}
                     {% set slug = category.replace(' ', '-') %}
                     <div id="hint-{{ slug }}" class="row wrap" style="gap:0.5rem; align-items:center;">

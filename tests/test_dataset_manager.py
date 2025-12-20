@@ -1,6 +1,6 @@
+from app.models import FilterCriteria, ImageData
 from app.services.config_service import ConfigService
 from app.services.dataset_manager import DatasetManager
-from app.models import ImageData
 
 
 def _dummy_manager(tmp_path):
@@ -52,3 +52,31 @@ def test_stage_image_edit_updates_tag(tmp_path):
 
     assert manager.images["img1"].tags_current == ["a", "c"]
     assert result["is_dirty"] is True
+
+
+def test_complete_flag_hides_missing_required_in_filter(tmp_path):
+    manager = _dummy_manager(tmp_path)
+    img_path = tmp_path / "data" / "img.png"
+    img_path.parent.mkdir(parents=True, exist_ok=True)
+    img_path.write_bytes(b"")
+
+    manager.images["img1"] = ImageData(
+        image_id="img1",
+        rel_path="img.png",
+        abs_path=img_path,
+        tags_original=[],
+        tags_current=[],
+    )
+
+    filters = FilterCriteria(has_missing_required=True)
+    initial = list(manager._filtered_images(filters))
+    assert len(initial) == 1
+    assert initial[0].image_id == "img1"
+
+    manager.set_image_complete("img1", True)
+    assert list(manager._filtered_images(filters)) == []
+
+    manager.set_image_complete("img1", False)
+    filtered = list(manager._filtered_images(filters))
+    assert len(filtered) == 1
+    assert filtered[0].image_id == "img1"

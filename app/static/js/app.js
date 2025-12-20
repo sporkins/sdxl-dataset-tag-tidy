@@ -8,6 +8,7 @@ function refreshDatasetSection() {
     .then((res) => res.text())
     .then((html) => {
       container.innerHTML = html;
+      applyStoredTogglePreferences();
       attachInteractions();
     });
 }
@@ -37,8 +38,90 @@ function attachInteractions() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', attachInteractions);
-document.body.addEventListener('htmx:afterSwap', attachInteractions);
+function setToggleVisibility(target, button, shouldShow, storageKey) {
+  const showLabel = button.dataset.toggleLabelShow || 'Show';
+  const hideLabel = button.dataset.toggleLabelHide || 'Hide';
+  if (shouldShow) {
+    target.removeAttribute('hidden');
+    target.classList.remove('is-hidden');
+    button.textContent = hideLabel;
+    button.setAttribute('aria-expanded', 'true');
+  } else {
+    target.setAttribute('hidden', '');
+    target.classList.add('is-hidden');
+    button.textContent = showLabel;
+    button.setAttribute('aria-expanded', 'false');
+  }
+  if (storageKey) {
+    localStorage.setItem(`toggle:${storageKey}`, shouldShow ? 'visible' : 'hidden');
+  }
+}
+
+function applyStoredTogglePreferences() {
+  document.querySelectorAll('[data-toggle-target][data-toggle-storage-key]').forEach((btn) => {
+    const target = document.querySelector(btn.dataset.toggleTarget || '');
+    if (!target) return;
+    const storageKey = btn.dataset.toggleStorageKey;
+    const stored = localStorage.getItem(`toggle:${storageKey}`);
+    if (stored === 'hidden') {
+      setToggleVisibility(target, btn, false, storageKey);
+    } else if (stored === 'visible') {
+      setToggleVisibility(target, btn, true, storageKey);
+    }
+  });
+}
+
+function handleCompletionToggle(event) {
+  const xhr = event.detail && event.detail.xhr;
+  if (!xhr) return;
+  let data;
+  try {
+    data = JSON.parse(xhr.responseText || '{}');
+  } catch (e) {
+    return;
+  }
+  if (typeof data.is_complete === 'undefined') return;
+  const isComplete = Boolean(data.is_complete);
+
+  const form = event.target.closest('form');
+  if (form) {
+    const toggleInput = form.querySelector('input[name="complete"]');
+    if (toggleInput) {
+      toggleInput.value = (!isComplete).toString();
+    }
+    const button = form.querySelector('button[type="submit"]');
+    if (button) {
+      button.textContent = isComplete ? 'Mark incomplete' : 'Mark complete';
+    }
+  }
+
+  const badge = document.getElementById('completion-badge');
+  if (badge) {
+    badge.textContent = isComplete ? 'Complete' : 'Incomplete';
+    badge.classList.toggle('success', isComplete);
+  }
+
+  const hintsComplete = document.getElementById('hints-complete');
+  const hintsActive = document.getElementById('hints-active');
+  if (hintsComplete && hintsActive) {
+    if (isComplete) {
+      hintsComplete.removeAttribute('hidden');
+      hintsActive.setAttribute('hidden', '');
+    } else {
+      hintsActive.removeAttribute('hidden');
+      hintsComplete.setAttribute('hidden', '');
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  applyStoredTogglePreferences();
+  attachInteractions();
+});
+document.body.addEventListener('htmx:afterSwap', () => {
+  applyStoredTogglePreferences();
+  attachInteractions();
+});
 
 document.body.addEventListener('click', (event) => {
   const editButton = event.target.closest('.edit-tag-btn');
@@ -65,20 +148,9 @@ document.body.addEventListener('click', (event) => {
   if (toggleButton) {
     const target = document.querySelector(toggleButton.dataset.toggleTarget || '');
     if (target) {
-      const showLabel = toggleButton.dataset.toggleLabelShow || 'Show';
-      const hideLabel = toggleButton.dataset.toggleLabelHide || 'Hide';
+      const storageKey = toggleButton.dataset.toggleStorageKey;
       const isHidden = target.hasAttribute('hidden');
-      if (isHidden) {
-        target.removeAttribute('hidden');
-        target.classList.remove('is-hidden');
-        toggleButton.textContent = hideLabel;
-        toggleButton.setAttribute('aria-expanded', 'true');
-      } else {
-        target.setAttribute('hidden', '');
-        target.classList.add('is-hidden');
-        toggleButton.textContent = showLabel;
-        toggleButton.setAttribute('aria-expanded', 'false');
-      }
+      setToggleVisibility(target, toggleButton, isHidden, storageKey);
     }
     return;
   }

@@ -132,6 +132,7 @@ async def bulk_op(request: Request, manager: DatasetManager = Depends(get_datase
             "has_tag": payload.get("has_tag") or None,
             "has_undesired": payload.get("has_undesired") in ("true", True),
             "has_missing_required": payload.get("has_missing_required") in ("true", True),
+            "is_complete": payload.get("is_complete") or None,
         }
     if "selected_image_ids" not in scope and payload.get("selected_image_ids"):
         ids = payload.get("selected_image_ids")
@@ -146,6 +147,18 @@ async def bulk_op(request: Request, manager: DatasetManager = Depends(get_datase
 async def image_op(image_id: str, request: Request, manager: DatasetManager = Depends(get_dataset_manager)):
     payload = await _coerce_payload(request)
     return manager.stage_image_edit(image_id, payload)
+
+
+@router.post("/image/{image_id}/complete")
+async def image_complete(image_id: str, request: Request, manager: DatasetManager = Depends(get_dataset_manager)):
+    payload = await _coerce_payload(request)
+    complete_raw = payload.get("complete")
+    complete = False
+    if isinstance(complete_raw, bool):
+        complete = complete_raw
+    elif isinstance(complete_raw, str):
+        complete = complete_raw.lower() in {"true", "1", "yes", "on"}
+    return manager.set_image_complete(image_id, complete)
 
 
 @router.get("/image/{image_id}/analyze")
