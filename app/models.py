@@ -71,6 +71,30 @@ class ThumbnailCacheSettings:
 
 
 @dataclass
+class LMStudioSettings:
+    enabled: bool = False
+    base_url: str = "http://localhost:1234"
+    default_model: str = ""
+    timeout_seconds: int = 30
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, object]) -> "LMStudioSettings":
+        lm_cfg = data.get("lm_studio", {}) if isinstance(data, dict) else {}
+        timeout_seconds = lm_cfg.get("timeout_seconds", 30)
+        try:
+            timeout_value = int(timeout_seconds)
+        except (TypeError, ValueError):
+            timeout_value = 30
+
+        return cls(
+            enabled=bool(lm_cfg.get("enabled", False)),
+            base_url=str(lm_cfg.get("base_url", "http://localhost:1234")),
+            default_model=str(lm_cfg.get("default_model", "")),
+            timeout_seconds=timeout_value,
+        )
+
+
+@dataclass
 class FilterCriteria:
     filename_contains: Optional[str] = None
     has_tag: Optional[str] = None

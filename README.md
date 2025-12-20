@@ -34,6 +34,7 @@ Open `http://localhost:8000` on your LAN device. The UI is touch-friendly and us
 
 ## Configuration
 - Copy `config/config.example.json` to `config/config.json` and set `dataset_root` along with optional thumbnail caching (disk mode, disabled by default). The app will also create the file on first run.
+- Configure optional Analyze hints via the `lm_studio` block. Defaults assume LM Studio is running locally on `http://localhost:1234` with suggestions disabled; override sensitive values in `config/lm_studio.override.json` (git-ignored).
 - `config/undesired_tags.json` stores the global undesired tag list in the format `{ "tags": [] }`. A starter `undesired_tags.example.json` is provided; the runtime file is ignored by git.
 
 ## Project layout
@@ -48,3 +49,4 @@ Open `http://localhost:8000` on your LAN device. The UI is touch-friendly and us
 ## Notes
 - Thumbnail endpoints validate paths against the loaded dataset and respect optional cache settings.
 - Tag hint heuristics follow the rules in `docs/SPEC.md` and highlight missing or optional categories.
+- Analyze is optional and uses a locally running LM Studio instance only. It never writes or stages changes automatically; suggested edits require explicit user approval before they are staged.
