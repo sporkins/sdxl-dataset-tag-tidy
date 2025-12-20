@@ -39,7 +39,7 @@
     <div class="card stack">
         <div class="row wrap" style="justify-content: space-between; align-items: center;">
             <div class="small">Filters</div>
-            <button type="button" class="secondary" data-toggle-target="#filters-content" data-toggle-label-show="Show filters" data-toggle-label-hide="Hide filters" aria-expanded="true">Hide filters</button>
+            <button type="button" class="secondary" data-toggle-target="#filters-content" data-toggle-storage-key="filters-panel" data-toggle-label-show="Show filters" data-toggle-label-hide="Hide filters" aria-expanded="true">Hide filters</button>
         </div>
         <div id="filters-content" class="stack">
             <form id="filters-form" class="stack" hx-get="/dataset" hx-target="#dataset-content" hx-trigger="change delay:250ms, submit" hx-swap="innerHTML">
@@ -110,7 +110,7 @@
             <div style="flex:1; min-width: 200px;">
                 <div class="row wrap" style="justify-content: space-between; align-items: center;">
                     <div class="small">Tag panel</div>
-                    <button type="button" class="secondary" data-toggle-target="#tag-panel" data-toggle-label-show="Show tags" data-toggle-label-hide="Hide tags" aria-expanded="true">Hide tags</button>
+                    <button type="button" class="secondary" data-toggle-target="#tag-panel" data-toggle-storage-key="tag-panel" data-toggle-label-show="Show tags" data-toggle-label-hide="Hide tags" aria-expanded="true">Hide tags</button>
                 </div>
                 <div id="tag-panel" class="list-inline">
                     {% for tag in summary.tags %}

@@ -12,6 +12,61 @@ function refreshDatasetSection() {
     });
 }
 
+function setToggleState(target, toggleButton, shouldShow) {
+  const showLabel = toggleButton.dataset.toggleLabelShow || 'Show';
+  const hideLabel = toggleButton.dataset.toggleLabelHide || 'Hide';
+  if (shouldShow) {
+    target.removeAttribute('hidden');
+    target.classList.remove('is-hidden');
+    toggleButton.textContent = hideLabel;
+    toggleButton.setAttribute('aria-expanded', 'true');
+  } else {
+    target.setAttribute('hidden', '');
+    target.classList.add('is-hidden');
+    toggleButton.textContent = showLabel;
+    toggleButton.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function getStoredTogglePreference(toggleButton) {
+  const key = toggleButton.dataset.toggleStorageKey;
+  if (!key) return null;
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storeTogglePreference(toggleButton, isShown) {
+  const key = toggleButton.dataset.toggleStorageKey;
+  if (!key) return;
+  try {
+    localStorage.setItem(key, isShown ? 'shown' : 'hidden');
+  } catch (e) {}
+}
+
+function applyStoredTogglePreferences() {
+  document.querySelectorAll('[data-toggle-target]').forEach((toggleButton) => {
+    const targetSelector = toggleButton.dataset.toggleTarget || '';
+    const target = document.querySelector(targetSelector);
+    if (!target) return;
+
+    const storedPreference = getStoredTogglePreference(toggleButton);
+    if (storedPreference === 'shown') {
+      setToggleState(target, toggleButton, true);
+      return;
+    }
+    if (storedPreference === 'hidden') {
+      setToggleState(target, toggleButton, false);
+      return;
+    }
+
+    const isHidden = target.hasAttribute('hidden');
+    setToggleState(target, toggleButton, !isHidden);
+  });
+}
+
 function attachInteractions() {
   document.querySelectorAll('[data-sortable="tags"]').forEach((el) => {
     if (el.dataset.bound === 'true') return;
@@ -35,6 +90,8 @@ function attachInteractions() {
       },
     });
   });
+
+  applyStoredTogglePreferences();
 }
 
 function handleCompletionToggle(event) {
@@ -108,20 +165,10 @@ document.body.addEventListener('click', (event) => {
   if (toggleButton) {
     const target = document.querySelector(toggleButton.dataset.toggleTarget || '');
     if (target) {
-      const showLabel = toggleButton.dataset.toggleLabelShow || 'Show';
-      const hideLabel = toggleButton.dataset.toggleLabelHide || 'Hide';
       const isHidden = target.hasAttribute('hidden');
-      if (isHidden) {
-        target.removeAttribute('hidden');
-        target.classList.remove('is-hidden');
-        toggleButton.textContent = hideLabel;
-        toggleButton.setAttribute('aria-expanded', 'true');
-      } else {
-        target.setAttribute('hidden', '');
-        target.classList.add('is-hidden');
-        toggleButton.textContent = showLabel;
-        toggleButton.setAttribute('aria-expanded', 'false');
-      }
+      const shouldShow = isHidden;
+      setToggleState(target, toggleButton, shouldShow);
+      storeTogglePreference(toggleButton, shouldShow);
     }
     return;
   }
