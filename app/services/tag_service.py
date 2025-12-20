@@ -32,6 +32,8 @@ class TagService:
         hints = engine.evaluate(tags, external_signals)
         for key in ("missing_required", "possibly_missing", "not_required"):
             hints[key] = _dedupe_preserve(hints.get(key, []))
+        if "info" in hints:
+            hints["info"] = _dedupe_preserve(hints.get("info", []))
         return hints
 
     @staticmethod

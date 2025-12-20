@@ -128,7 +128,7 @@
             <div class="row wrap">
                 <span class="badge">{{ img.tag_count }} tags</span>
                 {% if img.has_undesired %}<span class="badge" style="border-color: var(--danger); color:#fecaca;">Undesired</span>{% endif %}
-                {% if img.hints.missing_required %}<span class="badge warn">Missing required</span>{% endif %}
+                {% if img.hints.missing_required %}<span class="badge error">Missing required</span>{% endif %}
             </div>
             {% if img.hints.possibly_missing %}
             <div class="small">Needs review: {{ img.hints.possibly_missing | join(', ') }}</div>

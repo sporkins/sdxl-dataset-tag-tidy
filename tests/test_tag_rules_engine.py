@@ -62,6 +62,37 @@ class TagRulesEngineTests(unittest.TestCase):
         self.assertNotIn("invalid", hints)
         self.assertEqual([], [item for item in hints["missing_required"] if item == "arm_hand_position"])
 
+    def test_missing_framing_warns(self):
+        hints = TagService.compute_hints([])
+
+        self.assertIn("framing", hints["possibly_missing"])
+        self.assertNotIn("framing", hints["missing_required"])
+
+    def test_missing_framing_ignored_for_close_up(self):
+        hints = TagService.compute_hints(["close-up"])
+
+        self.assertNotIn("framing", hints["possibly_missing"])
+        self.assertNotIn("framing", hints["missing_required"])
+
+    def test_pose_missing_warns_when_lower_body_visible(self):
+        hints = TagService.compute_hints([], {"lower_body_and_ground_contact_visible": True})
+
+        self.assertIn("pose", hints["possibly_missing"])
+
+    def test_pose_missing_relaxed_by_close_up(self):
+        hints = TagService.compute_hints(
+            ["close-up"], {"lower_body_and_ground_contact_visible": True}
+        )
+
+        self.assertNotIn("pose", hints["possibly_missing"])
+        self.assertIn("pose", hints["not_required"])
+
+    def test_identity_token_records_info(self):
+        hints = TagService.compute_hints(["identity token"])
+
+        self.assertIn("info", hints)
+        self.assertIn("identity token", hints["info"])
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
