@@ -145,7 +145,8 @@
         "closed mouth"
       ],
       "notes": [
-        "Required when face is visible."
+        "Optional. Include only when mouth opening state is clearly discernible.",
+        "Omit when obscured, too small, angled, or unclear."
       ]
     },
     {

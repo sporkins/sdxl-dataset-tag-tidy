@@ -48,7 +48,8 @@ Categories are assigned one of these tiers:
 
 Some categories are conditional:
 
-- Face-related categories are required only when the face is visible.
+- Some face-related categories are required only when the face is visible (gaze, expression).
+  Mouth state is optional and should only be included when clearly discernible.
   - In v1, "from behind" implies face is not visible.
   - Future versions may add occlusion signals.
 
