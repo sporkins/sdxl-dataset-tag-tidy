@@ -42,6 +42,36 @@ class ConfigServiceTests(unittest.TestCase):
             self.assertEqual(payload, {"tags": ["cat", "DOG"]})
             self.assertFalse(path.with_suffix(path.suffix + ".tmp").exists())
 
+    def test_merges_lm_studio_override(self):
+        with TemporaryDirectory() as tmp:
+            base_dir = Path(tmp) / "config"
+            base_dir.mkdir(parents=True, exist_ok=True)
+
+            config_payload = {
+                "dataset_root": "C:/data",
+                "lm_studio": {
+                    "enabled": False,
+                    "base_url": "http://localhost:8080",
+                    "timeout_seconds": 15,
+                },
+            }
+            (base_dir / "config.json").write_text(json.dumps(config_payload), encoding="utf-8")
+            override_payload = {"lm_studio": {"enabled": True, "default_model": "granite"}}
+            (base_dir / "lm_studio.override.json").write_text(json.dumps(override_payload), encoding="utf-8")
+
+            service = ConfigService(base_dir=base_dir)
+            config = service.load_config()
+
+            self.assertEqual(
+                config.get("lm_studio"),
+                {
+                    "enabled": True,
+                    "base_url": "http://localhost:8080",
+                    "default_model": "granite",
+                    "timeout_seconds": 15,
+                },
+            )
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

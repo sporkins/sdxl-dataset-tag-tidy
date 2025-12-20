@@ -13,6 +13,7 @@ You are building a Python web app defined by SPEC.md.
 - Mobile-first UI
 - Touch-only interactions (no mouse assumptions)
 - Max dataset size: 200 images
+- Analyze is optional, uses only a local LM Studio backend, never writes or stages automatically, and requires explicit user approval before staging suggested changes
 - All datasets are under:
   C:/Zen/dev/kohya_ss/training
 

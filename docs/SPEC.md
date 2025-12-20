@@ -18,6 +18,7 @@ This app is a manual dataset hygiene tool, not an AI tagging system.
 - Mobile-first UI (touch-only; no mouse assumptions)
 - All tag changes must be staged until explicitly saved
 - Max dataset size: 200 images
+- Analyze suggestions are optional, rely only on a locally running LM Studio backend, and must never stage or write changes without explicit user approval
 
 ---
 
@@ -27,6 +28,7 @@ This app is a manual dataset hygiene tool, not an AI tagging system.
 - All datasets live under:
   - Configured via `config/config.json` (git-ignored). Recommended value: `C:/Zen/dev/kohya_ss/training`.
 - All filesystem access must be constrained to that dataset root.
+- LM Studio connection settings live in `config/config.json` under `lm_studio` and may be overridden at runtime via git-ignored `config/lm_studio.override.json`.
 
 ---
 

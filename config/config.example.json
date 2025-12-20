@@ -4,5 +4,11 @@
     "enabled": false,
     "mode": "disk",
     "dir_name": ".tag_tidy_cache"
+  },
+  "lm_studio": {
+    "enabled": false,
+    "base_url": "http://localhost:1234",
+    "default_model": "",
+    "timeout_seconds": 30
   }
 }
