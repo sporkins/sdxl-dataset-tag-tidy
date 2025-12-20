@@ -124,11 +124,22 @@ textarea {
   border-radius: 8px;
   font-size: 0.75rem;
   border: 1px solid var(--border);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.badge.error {
+  color: #fff1f2;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.24), rgba(248, 113, 113, 0.32));
+  border-color: #f87171;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.35), 0 6px 14px rgba(248, 113, 113, 0.2);
 }
 
 .badge.warn {
-  color: #fef3c7;
-  border-color: var(--warning);
+  color: #1f1302;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(245, 158, 11, 0.36));
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4), 0 6px 14px rgba(245, 158, 11, 0.2);
 }
 
 .stack {

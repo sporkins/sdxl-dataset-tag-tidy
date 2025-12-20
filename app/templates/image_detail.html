@@ -25,7 +25,7 @@
                     {% for category in hints.missing_required %}
                     {% set slug = category.replace(' ', '-') %}
                     <div id="hint-{{ slug }}" class="row wrap" style="gap:0.5rem; align-items:center;">
-                        <div class="badge warn">Missing: {{ category }}</div>
+                        <div class="badge error">Missing: {{ category }}</div>
                         <button type="button" class="secondary" style="width:auto;" hx-get="/api/image/{{ image.image_id }}/hint-options?category={{ category | urlencode }}&hint_type=missing" hx-target="#hint-{{ slug }}" hx-swap="outerHTML">Choose</button>
                     </div>
                     {% endfor %}
