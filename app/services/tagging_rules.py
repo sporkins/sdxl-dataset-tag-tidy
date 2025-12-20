@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set
 
 
 def _canonicalize_tag(tag: str) -> str:
@@ -29,6 +29,68 @@ class CategoryDefinition:
         return canonical in self.allowed_values or canonical in self.preferred_values
 
 
+class TaggingPolicy:
+    def __init__(self, policy_path: Path, taxonomy_version: str, graph_version: str):
+        self.policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        self.policy_version: str = str(self.policy.get("policy_version"))
+        self.taxonomy_version = str(self.policy.get("taxonomy_version"))
+        self.graph_version = str(self.policy.get("graph_version"))
+        if self.taxonomy_version != taxonomy_version:
+            raise ValueError("Tagging policy taxonomy version mismatch")
+        if self.graph_version != graph_version:
+            raise ValueError("Tagging policy graph version mismatch")
+        self.defaults: Dict[str, str] = self.policy.get("defaults", {})
+        self.category_policy: Dict[str, Dict[str, object]] = self.policy.get("category_policy", {})
+        self.tag_policy: Dict[str, Dict[str, object]] = self.policy.get("tag_policy", {})
+
+    def has_category_missing_rule(self, category_id: str) -> bool:
+        return "missing" in self.category_policy.get(category_id, {})
+
+    def _signal_allows_missing(self, category_id: str, signals: Dict[str, Optional[bool]]) -> bool:
+        policy = self.category_policy.get(category_id) or {}
+        only_when_signal = policy.get("only_when_signal")
+        if only_when_signal:
+            return signals.get(str(only_when_signal)) is True
+        unless = policy.get("unless_signal") or []
+        if any(signals.get(str(sig)) is True for sig in unless):
+            return False
+        return True
+
+    def missing_severity(
+        self,
+        category_id: str,
+        *,
+        signals: Dict[str, Optional[bool]],
+        relaxed: bool,
+        required: bool,
+        triggered: bool,
+    ) -> Optional[str]:
+        if relaxed:
+            return "ignore"
+
+        category_policy = self.category_policy.get(category_id) or {}
+        if not self._signal_allows_missing(category_id, signals):
+            return "ignore"
+
+        severity = category_policy.get("missing")
+        if severity is None:
+            if required:
+                severity = self.defaults.get("missing_required", "error")
+            elif triggered and self.has_category_missing_rule(category_id):
+                severity = category_policy.get("missing")
+        relaxed_missing = category_policy.get("relaxed_missing") if relaxed else None
+        return relaxed_missing or severity
+
+    def severity_for_condition(self, condition_type: str) -> str:
+        return self.defaults.get(condition_type, "error")
+
+    def tag_severity(self, tag: str) -> Optional[str]:
+        policy = self.tag_policy.get(tag) or self.tag_policy.get(_canonicalize_tag(tag))
+        if not policy:
+            return None
+        return policy.get("severity")
+
+
 class TaggingSpec:
     """
     Loads the v1 taxonomy and applicability graph.
@@ -38,7 +100,7 @@ class TaggingSpec:
     without changing call sites.
     """
 
-    def __init__(self, taxonomy_path: Path, applicability_path: Path):
+    def __init__(self, taxonomy_path: Path, applicability_path: Path, policy_path: Path):
         self.taxonomy = json.loads(taxonomy_path.read_text(encoding="utf-8"))
         self.graph = json.loads(applicability_path.read_text(encoding="utf-8"))
         self.categories: Dict[str, CategoryDefinition] = {}
@@ -52,6 +114,11 @@ class TaggingSpec:
         self.tier3_allowed: Set[str] = set()
         self._load_categories()
         self._load_constraints()
+        self.policy = TaggingPolicy(
+            policy_path=policy_path,
+            taxonomy_version=str(self.taxonomy.get("taxonomy_version")),
+            graph_version=str(self.graph.get("graph_version")),
+        )
 
     def _load_categories(self) -> None:
         for category in self.taxonomy.get("categories", []):
@@ -181,7 +248,12 @@ class TaggingRulesEngine:
         base = Path(__file__).resolve().parents[2]
         taxonomy_path = base / "docs" / "tagging" / "taxonomy.v1.json"
         applicability_path = base / "docs" / "tagging" / "applicability_graph.v1.json"
-        spec = TaggingSpec(taxonomy_path=taxonomy_path, applicability_path=applicability_path)
+        policy_path = base / "docs" / "tagging" / "policy.webapp.v1.json"
+        spec = TaggingSpec(
+            taxonomy_path=taxonomy_path,
+            applicability_path=applicability_path,
+            policy_path=policy_path,
+        )
         return cls(spec)
 
     def evaluate(self, tags: List[str], external_signals: Optional[Dict[str, Optional[bool]]] = None) -> Dict[str, List[str]]:
@@ -219,64 +291,52 @@ class TaggingRulesEngine:
         relaxed_categories: Set[str],
         tag_set: Set[str],
     ) -> Dict[str, List[str]]:
-        missing_required: List[str] = []
-        possibly_missing: List[str] = []
-        not_required: List[str] = ["background"]
+        buckets: Dict[str, List[str]] = {
+            "missing_required": [],
+            "possibly_missing": [],
+            "not_required": [],
+        }
         forbidden: List[str] = []
         invalid: List[str] = []
+        info: List[str] = []
 
-        def add_if_missing(category: str, relaxed: bool = False, minimum: int = 1) -> None:
-            present = len(categorized.get(category, []))
-            if present < minimum:
-                if relaxed:
-                    not_required.append(category)
-                else:
-                    missing_required.append(category)
-
+        requirements_by_category: Dict[str, List[int]] = {}
         for when, requirements in self.spec.require_constraints:
-            if self.spec._condition_matches(when, signals):
-                for requirement in requirements:
-                    category = requirement.get("category")
-                    if not category:
-                        continue
-                    minimum = int(requirement.get("min", 0))
-                    maximum = requirement.get("max")
-                    add_if_missing(category, minimum=minimum or 0)
-                    if maximum is not None:
-                        maximum_count = int(maximum)
-                        if len(categorized.get(category, [])) > maximum_count:
-                            invalid.append(category)
+            if not self.spec._condition_matches(when, signals):
+                continue
+            for requirement in requirements:
+                category = requirement.get("category")
+                if not category:
+                    continue
+                minimum = int(requirement.get("min", 0))
+                maximum = requirement.get("max")
+                requirements_by_category.setdefault(category, []).append(minimum)
+                if maximum is not None:
+                    maximum_count = int(maximum)
+                    if len(categorized.get(category, [])) > maximum_count:
+                        self._route_condition(
+                            category,
+                            condition_type="invalid",
+                            severity=self.spec.policy.severity_for_condition("invalid"),
+                            relaxed=False,
+                            buckets=buckets,
+                        )
+                        invalid.append(category)
 
-        face_visible = signals.get("face_visible")
-        if face_visible is False:
-            not_required.extend(["gaze", "expression", "mouth_state", "eyes_state"])
-            for when, forbidden_tags in self.spec.forbidden_constraints:
-                if self.spec._condition_matches(when, signals):
-                    for tag in forbidden_tags:
-                        if tag in tag_set:
-                            forbidden.append(tag)
-
-        extreme_closeup = signals.get("extreme_closeup") is True
-        if "view_angle" in relaxed_categories:
-            if not categorized.get("view_angle"):
-                not_required.append("view_angle")
-        else:
-            if extreme_closeup:
-                if not categorized.get("view_angle"):
-                    not_required.append("view_angle")
-            else:
-                add_if_missing("view_angle")
-
-        lower_body_visible = signals.get("lower_body_and_ground_contact_visible")
-        pose_relaxed = "pose" in relaxed_categories or extreme_closeup
-        if lower_body_visible is True:
-            add_if_missing("pose", relaxed=pose_relaxed)
-        elif lower_body_visible is False:
-            not_required.append("pose")
-
-        hair_visible = signals.get("hair_visible")
-        if hair_visible is False:
-            not_required.append("hair_style")
+        for when, forbidden_tags in self.spec.forbidden_constraints:
+            if not self.spec._condition_matches(when, signals):
+                continue
+            for tag in forbidden_tags:
+                if tag in tag_set:
+                    severity = self.spec.policy.severity_for_condition("forbidden")
+                    self._route_condition(
+                        tag,
+                        condition_type="forbidden",
+                        severity=severity,
+                        relaxed=False,
+                        buckets=buckets,
+                    )
+                    forbidden.append(tag)
 
         for category, tags in categorized.items():
             max_count = self.spec.categories.get(category).cardinality_max
@@ -284,16 +344,100 @@ class TaggingRulesEngine:
                 if len(tags) > 1:
                     invalid.append(category)
 
+        for category_id, definition in self.spec.categories.items():
+            present = len(categorized.get(category_id, []))
+            required_minimum = max(
+                [definition.cardinality_min] + requirements_by_category.get(category_id, [])
+                or [0]
+            )
+            required = required_minimum > 0
+            triggered = category_id in requirements_by_category
+            relaxed = category_id in relaxed_categories
+
+            should_check = required or triggered or self.spec.policy.has_category_missing_rule(category_id)
+            if not should_check:
+                continue
+
+            missing_expected = False
+            if required_minimum > 0 and present < required_minimum:
+                missing_expected = True
+            elif required_minimum == 0 and present == 0:
+                missing_expected = True
+
+            if not missing_expected:
+                continue
+
+            severity = self.spec.policy.missing_severity(
+                category_id,
+                signals=signals,
+                relaxed=relaxed,
+                required=required,
+                triggered=triggered,
+            )
+            self._route_condition(
+                category_id,
+                condition_type="missing_required",
+                severity=severity,
+                relaxed=relaxed,
+                buckets=buckets,
+            )
+
+        for tag in tag_set:
+            tag_severity = self.spec.policy.tag_severity(tag)
+            if not tag_severity:
+                continue
+            self._route_condition(
+                tag,
+                condition_type="info",
+                severity=tag_severity,
+                relaxed=False,
+                buckets=buckets,
+            )
+            info.append(tag)
+
         hints = {
-            "missing_required": _dedupe_preserve(missing_required),
-            "possibly_missing": _dedupe_preserve(possibly_missing),
-            "not_required": _dedupe_preserve(not_required),
+            "missing_required": _dedupe_preserve(buckets["missing_required"]),
+            "possibly_missing": _dedupe_preserve(buckets["possibly_missing"]),
+            "not_required": _dedupe_preserve(buckets["not_required"]),
         }
         if forbidden:
             hints["forbidden"] = _dedupe_preserve(forbidden)
         if invalid:
             hints["invalid"] = _dedupe_preserve(invalid)
+        if info:
+            hints["info"] = _dedupe_preserve(info)
         return hints
+
+    def _route_condition(
+        self,
+        category: str,
+        *,
+        condition_type: str,
+        severity: Optional[str],
+        relaxed: bool,
+        buckets: Dict[str, List[str]],
+    ) -> None:
+        if severity is None:
+            return
+        if relaxed and condition_type == "missing_required":
+            buckets["not_required"].append(category)
+            return
+
+        if condition_type in {"forbidden", "invalid"}:
+            if severity == "ignore":
+                buckets["not_required"].append(category)
+            return
+
+        mapping = {
+            "error": "missing_required",
+            "warning": "possibly_missing",
+            "ignore": "not_required",
+            "info": "possibly_missing",
+        }
+        bucket = mapping.get(severity)
+        if not bucket:
+            return
+        buckets[bucket].append(category)
 
 
 def _dedupe_preserve(items: List[str]) -> List[str]:

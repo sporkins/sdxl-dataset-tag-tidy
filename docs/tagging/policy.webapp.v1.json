@@ -1,0 +1,36 @@
+{
+  "policy_version": "1.0",
+  "taxonomy_version": "v1",
+  "graph_version": "1.0",
+  "defaults": {
+    "missing_required": "error",
+    "forbidden": "error",
+    "invalid": "error"
+  },
+  "category_policy": {
+    "background": {
+      "missing": "ignore"
+    },
+    "framing": {
+      "missing": "warning",
+      "unless_signal": ["extreme_closeup"]
+    },
+    "view_angle": {
+      "missing": "error",
+      "relaxed_missing": "ignore"
+    },
+    "pose": {
+      "missing": "warning",
+      "only_when_signal": "lower_body_and_ground_contact_visible",
+      "relaxed_missing": "ignore"
+    }
+  },
+  "tag_policy": {
+    "identity token": {
+      "severity": "info"
+    },
+    "identity_token": {
+      "severity": "info"
+    }
+  }
+}
