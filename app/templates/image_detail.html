@@ -49,13 +49,19 @@
                 <div class="small">Tags (drag to reorder)</div>
                 <div id="reorder-status" class="small"></div>
             </div>
-            <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()">
-                <input type="hidden" name="type" value="add">
-                <div class="row wrap">
-                    <input name="tag" placeholder="new tag" />
-                    <button type="submit" class="secondary" style="width:auto;">Add</button>
+            <div class="stack" style="gap:0.35rem;">
+                <form hx-post="/api/image/{{ image.image_id }}/ops" hx-target="#tag-feedback" hx-on::after-request="location.reload()" class="stack" style="gap:0.35rem;">
+                    <input type="hidden" name="type" value="add">
+                    <div class="row wrap">
+                        <input name="tag" placeholder="new tag" />
+                        <button type="submit" class="secondary" style="width:auto;">Add</button>
+                    </div>
+                </form>
+                <div class="row wrap" style="align-items:center;">
+                    <button type="button" class="secondary" style="width:auto;" hx-get="/api/image/{{ image.image_id }}/analyze" hx-target="#analysis-results" hx-swap="innerHTML" hx-indicator="#analyze-loading">Analyze</button>
+                    <div id="analyze-loading" class="small htmx-indicator">Analyzing…</div>
                 </div>
-            </form>
+            </div>
         </div>
         <ul id="tag-list" class="stack" data-sortable="tags" data-image-id="{{ image.image_id }}" style="list-style:none; padding-left:0; gap:0.35rem;">
             {% for tag in image.tags_current %}
@@ -72,6 +78,7 @@
             {% endfor %}
         </ul>
         <div id="tag-feedback" class="small"></div>
+        <div id="analysis-results" class="stack"></div>
     </div>
 </section>
 {% endblock %}

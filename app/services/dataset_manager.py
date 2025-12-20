@@ -267,10 +267,33 @@ class DatasetManager:
                 raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_OP", "Specify a tag to edit.")
 
             image.tags_current = updated_tags
+        elif op_type == "add_many":
+            tags = self._coerce_tag_list(op.get("tags"))
+            for tag in tags:
+                if tag not in image.tags_current:
+                    image.tags_current.append(tag)
+        elif op_type == "remove_many":
+            tags = set(self._coerce_tag_list(op.get("tags")))
+            if tags:
+                image.tags_current = [t for t in image.tags_current if t not in tags]
+        elif op_type == "replace_all":
+            tags = self._coerce_tag_list(op.get("tags"))
+            image.tags_current = tags
         else:
             raise self._error(status.HTTP_400_BAD_REQUEST, "INVALID_OP", "Unsupported operation.")
 
         return {"image_id": image_id, "is_dirty": image.is_dirty()}
+
+    def _coerce_tag_list(self, raw: object) -> List[str]:
+        if raw is None:
+            return []
+        if isinstance(raw, str):
+            items = [raw]
+        elif isinstance(raw, list):
+            items = raw
+        else:
+            return []
+        return [str(item).strip() for item in items if str(item).strip()]
 
     def _tags_match(self, proposed: List[str], current: List[str]) -> bool:
         if len(proposed) != len(current):
@@ -278,6 +301,40 @@ class DatasetManager:
         from collections import Counter
 
         return Counter(proposed) == Counter(current)
+
+    def analyze_image(self, image_id: str) -> Dict[str, object]:
+        image = self.images.get(image_id)
+        if not image:
+            raise self._error(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Image not found.")
+
+        from collections import Counter
+
+        cleaned = [str(tag).strip() for tag in image.tags_current if str(tag).strip()]
+        unique: List[str] = []
+        seen = set()
+        for tag in cleaned:
+            if tag not in seen:
+                unique.append(tag)
+                seen.add(tag)
+
+        current_counter = Counter(cleaned)
+        proposed_counter = Counter(unique)
+        removed: List[str] = []
+        for tag, count in current_counter.items():
+            extra = count - proposed_counter.get(tag, 0)
+            if extra > 0:
+                removed.extend([tag] * extra)
+
+        proposed_line = TagService.normalize_on_save(unique)
+
+        return {
+            "image_id": image_id,
+            "current_tags": image.tags_current,
+            "proposed_tags": unique,
+            "proposed_line": proposed_line,
+            "added": [tag for tag in unique if tag not in cleaned],
+            "removed": removed,
+        }
 
     def stage_bulk_edit(self, scope: Dict[str, object], op: Dict[str, object]) -> Dict[str, object]:
         mode = scope.get("mode")

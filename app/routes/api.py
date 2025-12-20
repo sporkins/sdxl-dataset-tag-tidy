@@ -6,6 +6,7 @@ from typing import Any, Dict, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+
 from fastapi.templating import Jinja2Templates
 
 from app.deps import get_config_service, get_dataset_manager, get_lm_studio_service
@@ -145,6 +146,47 @@ async def bulk_op(request: Request, manager: DatasetManager = Depends(get_datase
 async def image_op(image_id: str, request: Request, manager: DatasetManager = Depends(get_dataset_manager)):
     payload = await _coerce_payload(request)
     return manager.stage_image_edit(image_id, payload)
+
+
+@router.get("/image/{image_id}/analyze")
+def analyze_image(
+    request: Request, image_id: str, dismiss: str | None = None, manager: DatasetManager = Depends(get_dataset_manager)
+):
+    if dismiss:
+        return HTMLResponse("", status_code=status.HTTP_200_OK)
+    analysis = manager.analyze_image(image_id)
+    return templates.TemplateResponse(
+        "fragments/analyze_result.html",
+        {"request": request, "analysis": analysis},
+    )
+
+
+@router.post("/image/{image_id}/analyze")
+async def analyze_action(image_id: str, request: Request, manager: DatasetManager = Depends(get_dataset_manager)):
+    payload = await _coerce_payload(request)
+    action = payload.get("action") or ""
+    tags = payload.get("tags") or []
+    if isinstance(tags, str):
+        tags = [tags]
+
+    if action == "stage_adds" and tags:
+        manager.stage_image_edit(image_id, {"type": "add_many", "tags": tags})
+    elif action == "stage_removals" and tags:
+        manager.stage_image_edit(image_id, {"type": "remove_many", "tags": tags})
+    elif action == "replace_all":
+        manager.stage_image_edit(image_id, {"type": "replace_all", "tags": tags})
+
+    analysis = manager.analyze_image(image_id)
+    analysis["message"] = {
+        "stage_adds": "Proposed additions staged",
+        "stage_removals": "Proposed removals staged",
+        "replace_all": "Proposed tags staged",
+    }.get(action, "Analysis updated")
+
+    return templates.TemplateResponse(
+        "fragments/analyze_result.html",
+        {"request": request, "analysis": analysis},
+    )
 
 
 @router.get("/changes")
