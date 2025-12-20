@@ -4,13 +4,20 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
-from fastapi import APIRouter, Depends, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
+
 from fastapi.templating import Jinja2Templates
 
-from app.deps import get_config_service, get_dataset_manager
+from app.deps import get_config_service, get_dataset_manager, get_lm_studio_service
 from app.services.config_service import ConfigService
 from app.services.dataset_manager import DatasetManager
+from app.services.lmstudio_service import (
+    LmStudioError,
+    LmStudioInvalidResponseError,
+    LmStudioService,
+    LmStudioTimeoutError,
+)
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
@@ -221,3 +228,55 @@ async def undesired_remove(request: Request, config: ConfigService = Depends(get
     tags = [t for t in config.load_undesired_tags() if t != tag]
     config.save_undesired_tags(tags)
     return {"ok": True}
+
+
+@router.post("/image/{image_id}/analyze")
+async def analyze_image(
+    image_id: str,
+    manager: DatasetManager = Depends(get_dataset_manager),
+    config: ConfigService = Depends(get_config_service),
+    lm_service: LmStudioService = Depends(get_lm_studio_service),
+):
+    try:
+        manager.require_loaded()
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
+            raise HTTPException(status.HTTP_409_CONFLICT, detail=exc.detail)
+        raise
+
+    try:
+        image = manager.get_image(image_id)
+    except HTTPException:
+        raise
+
+    exclusions = config.load_undesired_tags()
+
+    try:
+        suggested_tags = await lm_service.analyze_image(image.abs_path, image.tags_current, exclusions=exclusions)
+    except LmStudioTimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": {"code": "LM_TIMEOUT", "message": str(exc)}},
+        ) from exc
+    except LmStudioInvalidResponseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": {"code": "LM_INVALID", "message": str(exc)}},
+        ) from exc
+    except LmStudioError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": {"code": "LM_ERROR", "message": str(exc)}},
+        ) from exc
+
+    current_lower = [tag.lower() for tag in image.tags_current]
+    suggested_set = set(suggested_tags)
+    added = [tag for tag in suggested_tags if tag not in current_lower]
+    removed = [tag for tag in image.tags_current if tag.lower() not in suggested_set]
+
+    return {
+        "image_id": image_id,
+        "current_tags": image.tags_current,
+        "suggested_tags": suggested_tags,
+        "diff": {"added": added, "removed": removed},
+    }

@@ -11,4 +11,5 @@ __pycache__/
 /.pytest_cache/
 /.tag_tidy_cache/
 config/config.json
+config/lm_studio.override.json
 config/undesired_tags.json
