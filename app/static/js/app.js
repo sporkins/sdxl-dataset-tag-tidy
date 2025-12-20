@@ -83,6 +83,22 @@ document.body.addEventListener('click', (event) => {
     return;
   }
 
+  const copyButton = event.target.closest('[data-copy-text]');
+  if (copyButton) {
+    const text = copyButton.dataset.copyText || '';
+    if (!text) return;
+    if (!navigator.clipboard) return;
+    const originalLabel = copyButton.dataset.originalLabel || copyButton.textContent;
+    copyButton.dataset.originalLabel = originalLabel;
+    navigator.clipboard.writeText(text).then(() => {
+      copyButton.textContent = 'Copied';
+      setTimeout(() => {
+        copyButton.textContent = copyButton.dataset.originalLabel || originalLabel;
+      }, 1500);
+    });
+    return;
+  }
+
   const targetButton = event.target.closest('#choose-folder');
   if (targetButton) {
     const rel = targetButton.dataset.rel || '';

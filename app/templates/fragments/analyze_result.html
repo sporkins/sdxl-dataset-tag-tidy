@@ -1,0 +1,66 @@
+{% if analysis.proposed_tags %}
+<div class="card stack" id="analysis-panel">
+    <div class="row" style="justify-content: space-between; align-items: flex-start;">
+        <div class="stack" style="gap:0.25rem;">
+            <div class="small">Proposed tag line</div>
+            <div class="small" style="word-break:break-word;">{{ analysis.proposed_line or 'No proposal available' }}</div>
+            {% if analysis.message %}
+            <div class="small" style="color: var(--accent);">{{ analysis.message }}</div>
+            {% endif %}
+        </div>
+        <button type="button" class="secondary" style="width:auto;" data-copy-text="{{ analysis.proposed_line }}">Copy line</button>
+    </div>
+    <div class="stack">
+        <div class="row wrap" style="align-items:flex-start;">
+            <div class="stack" style="flex:1; min-width:180px;">
+                <div class="small">Adds ({{ analysis.added|length }})</div>
+                {% if analysis.added %}
+                <div class="list-inline">
+                    {% for tag in analysis.added %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="small">No new tags suggested</div>
+                {% endif %}
+            </div>
+            <div class="stack" style="flex:1; min-width:180px;">
+                <div class="small">Removals ({{ analysis.removed|length }})</div>
+                {% if analysis.removed %}
+                <div class="list-inline">
+                    {% for tag in analysis.removed %}
+                    <span class="tag danger">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="small">No removals suggested</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="row wrap">
+        <form hx-post="/api/image/{{ analysis.image_id }}/analyze" hx-target="#analysis-results" hx-swap="innerHTML" hx-indicator="#analyze-loading" style="width:auto;">
+            <input type="hidden" name="action" value="stage_adds">
+            {% for tag in analysis.added %}
+            <input type="hidden" name="tags" value="{{ tag }}">
+            {% endfor %}
+            <button type="submit" class="secondary" style="width:auto;" {% if not analysis.added %}disabled{% endif %}>Stage adds</button>
+        </form>
+        <form hx-post="/api/image/{{ analysis.image_id }}/analyze" hx-target="#analysis-results" hx-swap="innerHTML" hx-indicator="#analyze-loading" style="width:auto;">
+            <input type="hidden" name="action" value="stage_removals">
+            {% for tag in analysis.removed %}
+            <input type="hidden" name="tags" value="{{ tag }}">
+            {% endfor %}
+            <button type="submit" class="secondary" style="width:auto;" {% if not analysis.removed %}disabled{% endif %}>Stage removals</button>
+        </form>
+        <form hx-post="/api/image/{{ analysis.image_id }}/analyze" hx-target="#analysis-results" hx-swap="innerHTML" hx-indicator="#analyze-loading" style="width:auto;">
+            <input type="hidden" name="action" value="replace_all">
+            {% for tag in analysis.proposed_tags %}
+            <input type="hidden" name="tags" value="{{ tag }}">
+            {% endfor %}
+            <button type="submit" style="width:auto;">Replace all</button>
+        </form>
+        <button type="button" class="secondary" style="width:auto;" hx-get="/api/image/{{ analysis.image_id }}/analyze?dismiss=1" hx-target="#analysis-results" hx-swap="innerHTML">Dismiss</button>
+    </div>
+</div>
+{% endif %}
