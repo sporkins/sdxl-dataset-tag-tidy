@@ -67,6 +67,14 @@
                         <input class="filter-field" type="checkbox" name="has_missing_required" value="true" {% if filters.has_missing_required %}checked{% endif %}>
                         <span>Missing required hints</span>
                     </label>
+                    <div class="row wrap" style="gap:0.35rem; align-items:center;">
+                        <label class="small" for="is-complete-filter">Completion</label>
+                        <select id="is-complete-filter" class="filter-field" name="is_complete">
+                            <option value="" {% if filters.is_complete is none %}selected{% endif %}>All</option>
+                            <option value="true" {% if filters.is_complete is true %}selected{% endif %}>Complete</option>
+                            <option value="false" {% if filters.is_complete is false %}selected{% endif %}>Incomplete</option>
+                        </select>
+                    </div>
                     <button type="submit" class="secondary" style="width:auto;">Apply filters</button>
                 </div>
             </form>
@@ -127,12 +135,20 @@
             <div class="small">{{ img.rel_path }}</div>
             <div class="row wrap">
                 <span class="badge">{{ img.tag_count }} tags</span>
+                {% if img.is_complete %}
+                <span class="badge success">Complete</span>
+                {% else %}
                 {% if img.has_undesired %}<span class="badge" style="border-color: var(--danger); color:#fecaca;">Undesired</span>{% endif %}
                 {% if img.hints.missing_required %}<span class="badge error">Missing required</span>{% endif %}
+                {% endif %}
             </div>
-            {% if img.hints.possibly_missing %}
+            {% if not img.is_complete and img.hints.possibly_missing %}
             <div class="small">Needs review: {{ img.hints.possibly_missing | join(', ') }}</div>
             {% endif %}
+            <form class="row" style="gap:0.35rem;" hx-post="/api/image/{{ img.image_id }}/complete" hx-swap="none" hx-on::after-request="refreshDatasetSection()">
+                <input type="hidden" name="complete" value="{{ not img.is_complete }}">
+                <button type="submit" class="secondary" style="width:auto;">{% if img.is_complete %}Mark incomplete{% else %}Mark complete{% endif %}</button>
+            </form>
         </div>
         {% endfor %}
         {% if summary.images|length == 0 %}

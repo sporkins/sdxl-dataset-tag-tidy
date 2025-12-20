@@ -142,6 +142,13 @@ textarea {
   box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4), 0 6px 14px rgba(245, 158, 11, 0.2);
 }
 
+.badge.success {
+  color: #022c22;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.34));
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.45), 0 6px 14px rgba(16, 185, 129, 0.22);
+}
+
 .stack {
   display: flex;
   flex-direction: column;
