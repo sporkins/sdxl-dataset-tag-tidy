@@ -15,6 +15,7 @@ class ImageData:
     abs_path: Path
     tags_original: List[str]
     tags_current: List[str]
+    is_complete: bool = False
 
     def is_dirty(self) -> bool:
         return self.tags_original != self.tags_current
@@ -100,6 +101,7 @@ class FilterCriteria:
     has_tag: Optional[str] = None
     has_undesired: Optional[bool] = None
     has_missing_required: Optional[bool] = None
+    is_complete: Optional[bool] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, object]) -> "FilterCriteria":
@@ -110,6 +112,7 @@ class FilterCriteria:
             has_tag=(data.get("has_tag") or None),
             has_undesired=cls._coerce_bool(data.get("has_undesired")),
             has_missing_required=cls._coerce_bool(data.get("has_missing_required")),
+            is_complete=cls._coerce_bool(data.get("is_complete")),
         )
 
     @staticmethod
@@ -120,6 +123,8 @@ class FilterCriteria:
             return value
         if isinstance(value, str):
             lowered = value.lower()
+            if lowered == "":
+                return None
             if lowered in {"true", "1", "yes", "on"}:
                 return True
             if lowered in {"false", "0", "no", "off", ""}:

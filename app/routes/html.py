@@ -55,6 +55,7 @@ def dataset_view(
     has_tag: Optional[str] = None,
     has_undesired: Optional[str] = None,
     has_missing_required: Optional[str] = None,
+    is_complete: Optional[str] = None,
     manager: DatasetManager = Depends(get_dataset_manager),
     config: ConfigService = Depends(get_config_service),
 ):
@@ -69,6 +70,7 @@ def dataset_view(
             "has_tag": has_tag,
             "has_undesired": has_undesired,
             "has_missing_required": has_missing_required,
+            "is_complete": is_complete,
         }
     )
     summary = manager.get_dataset_summary(filters)
@@ -94,7 +96,7 @@ def image_detail(request: Request, image_id: str, manager: DatasetManager = Depe
     image = manager.get_image(image_id)
     from app.services.tag_service import TagService
 
-    hints_map = TagService.compute_hints(image.tags_current)
+    hints_map = TagService.compute_hints(image.tags_current) if not image.is_complete else {"missing_required": [], "possibly_missing": [], "not_required": [], "info": []}
     undesired_lookup = {tag.lower() for tag in config.load_undesired_tags()}
     return templates.TemplateResponse(
         "image_detail.html",
